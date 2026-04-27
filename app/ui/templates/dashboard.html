@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<h1>Tenants & Bots</h1>
+
+{% for item in tenant_data %}
+<div class="card">
+  <div class="card-header">
+    <h2>{{ item.tenant.name }}</h2>
+    <span class="badge">{{ item.tenant.slack_team_id }}</span>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Bot Slug</th>
+        <th>Name</th>
+        <th>App ID</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for bot in item.bots %}
+      <tr>
+        <td><code>{{ bot.slug }}</code></td>
+        <td>{{ bot.name }}</td>
+        <td><code>{{ bot.slack_app_id }}</code></td>
+        <td>
+          <a class="btn" href="/admin/compose?tenant={{ item.tenant.slug }}">
+            Compose Message
+          </a>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4">No active bots</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endfor %}
+{% endblock %}
