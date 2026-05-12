@@ -16,7 +16,6 @@ from app.models import Tenant
 
 logger = logging.getLogger(__name__)
 
-# Routes that don't need a tenant
 _PUBLIC_PREFIXES = (
     "/health",
     "/static",
@@ -24,14 +23,14 @@ _PUBLIC_PREFIXES = (
     "/openapi.json",
     "/redoc",
     "/favicon.ico",
+    "/admin",
+    "/api/admin",
 )
-
 
 class TenantMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next) -> Response:
         path = request.url.path
 
-        # Root and public paths bypass tenant resolution
         if path == "/" or path.startswith(_PUBLIC_PREFIXES):
             return await call_next(request)
 
@@ -44,12 +43,10 @@ class TenantMiddleware(BaseHTTPMiddleware):
             )
 
         if tenant is None:
-            
             if path.startswith("/slack"):
                 return await call_next(request)
             return JSONResponse({"error": "tenant_not_found"}, status_code=404)
 
-        # Stash on request.state for handlers
         request.state.tenant_id = tenant.id
         request.state.tenant_slug = tenant.slug
         request.state.slack_team_id = tenant.slack_team_id
@@ -71,21 +68,10 @@ class TenantMiddleware(BaseHTTPMiddleware):
                 return None
             return await self._lookup_by_team_id(team_id)
 
-        if path.startswith("/api/admin") or path.startswith("/admin"):
-            slug = request.headers.get("x-tenant-slug")
-            # Allow query param fallback for the HTML UI
-            if not slug:
-                slug = request.query_params.get("tenant")
-            if not slug:
-                return None
-            return await self._lookup_by_slug(slug)
-
         return None
 
     async def _team_id_from_slack(self, request: Request) -> Optional[str]:
-        """Slack sends both JSON (events) and form-encoded (slash commands).
-        We need to peek at the body WITHOUT consuming it for the route handler."""
-        body = await request.body()  # Starlette caches this, so handler can re-read
+        body = await request.body() 
         if not body:
             return None
 
@@ -105,7 +91,7 @@ class TenantMiddleware(BaseHTTPMiddleware):
 
         if "application/x-www-form-urlencoded" in ctype:
             parsed = parse_qs(body.decode("utf-8", errors="ignore"))
-            # Slack interactive payloads wrap json inside payload= field
+            
             if "payload" in parsed:
                 try:
                     inner = json.loads(parsed["payload"][0])

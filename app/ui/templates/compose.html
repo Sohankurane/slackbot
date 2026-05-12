@@ -127,7 +127,7 @@ function showResult(id, data) {
 }
 
 async function sendAlert() {
-  const data = await post(`/api/admin/send/alert?tenant_slug=${TENANT}`, {
+  const data = await post(`/api/admin/send/alert?tenant=${TENANT}`, {
     bot_slug: document.getElementById('alert-bot').value,
     channel: document.getElementById('alert-channel').value,
     message: document.getElementById('alert-message').value,
@@ -137,7 +137,7 @@ async function sendAlert() {
 }
 
 async function sendQA() {
-  const data = await post(`/api/admin/send/qa?tenant_slug=${TENANT}`, {
+  const data = await post(`/api/admin/send/qa?tenant=${TENANT}`, {
     bot_slug: document.getElementById('qa-bot').value,
     channel: document.getElementById('qa-channel').value,
     question: document.getElementById('qa-question').value,
@@ -148,7 +148,7 @@ async function sendQA() {
 async function sendMCQ() {
   const options = document.getElementById('mcq-options').value
     .split('\n').map(s => s.trim()).filter(Boolean);
-  const data = await post(`/api/admin/send/mcq?tenant_slug=${TENANT}`, {
+  const data = await post(`/api/admin/send/mcq?tenant=${TENANT}`, {
     bot_slug: document.getElementById('mcq-bot').value,
     channel: document.getElementById('mcq-channel').value,
     question: document.getElementById('mcq-question').value,

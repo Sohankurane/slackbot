@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% block title %}Manage Tenants{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <h1>Tenants</h1>
+  <button class="btn-primary" onclick="toggleForm('new-tenant-form')">+ Add Tenant</button>
+</div>
+
+<!-- Add tenant form (hidden by default) -->
+<div id="new-tenant-form" class="card" style="display:none;">
+  <h2>Add New Tenant (Slack Workspace)</h2>
+  <div class="field">
+    <label>Slug <small>(short id, lowercase, e.g. <code>prj-sk2</code>)</small></label>
+    <input type="text" id="t-slug" placeholder="prj-sk2">
+  </div>
+  <div class="field">
+    <label>Name <small>(human-friendly, e.g. <code>PRJ-SK2</code>)</small></label>
+    <input type="text" id="t-name" placeholder="PRJ-SK2">
+  </div>
+  <div class="field">
+    <label>Slack Team ID <small>(starts with T, from your workspace URL)</small></label>
+    <input type="text" id="t-team-id" placeholder="T0XXXXXXXXX">
+  </div>
+  <button class="btn-primary" onclick="createTenant()">Create Tenant</button>
+  <button class="btn" onclick="toggleForm('new-tenant-form')">Cancel</button>
+  <div id="new-tenant-result" class="result"></div>
+</div>
+
+<!-- Tenants list -->
+<div class="card">
+  <h2>All Tenants</h2>
+  <table id="tenants-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Slug</th>
+        <th>Name</th>
+        <th>Slack Team ID</th>
+        <th>Active</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody><tr><td colspan="6">Loading…</td></tr></tbody>
+  </table>
+</div>
+
+<script>
+const ADMIN_TOKEN = prompt("Enter admin token:") || "";
+
+function toggleForm(id) {
+  const el = document.getElementById(id);
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+async function api(method, url, body) {
+  const opts = {
+    method,
+    headers: { 'X-Admin-Token': ADMIN_TOKEN },
+  };
+  if (body) {
+    opts.headers['Content-Type'] = 'application/json';
+    opts.body = JSON.stringify(body);
+  }
+  const res = await fetch(url, opts);
+  return { ok: res.ok, data: await res.json() };
+}
+
+async function loadTenants() {
+  const { data } = await api('GET', '/api/admin/tenants');
+  const tbody = document.querySelector('#tenants-table tbody');
+  if (!Array.isArray(data) || data.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6">No tenants yet</td></tr>';
+    return;
+  }
+  tbody.innerHTML = data.map(t => `
+    <tr>
+      <td>${t.id}</td>
+      <td><code>${t.slug}</code></td>
+      <td>${t.name}</td>
+      <td><code>${t.slack_team_id}</code></td>
+      <td>${t.is_active ? '✅' : '❌'}</td>
+      <td>
+        <a class="btn" href="/admin/manage/${t.slug}">Bots</a>
+        <button class="btn" onclick="toggleActive(${t.id}, ${!t.is_active})">
+          ${t.is_active ? 'Disable' : 'Enable'}
+        </button>
+        <button class="btn btn-danger" onclick="deleteTenant(${t.id}, '${t.slug}')">Delete</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+async function createTenant() {
+  const body = {
+    slug: document.getElementById('t-slug').value.trim(),
+    name: document.getElementById('t-name').value.trim(),
+    slack_team_id: document.getElementById('t-team-id').value.trim(),
+  };
+  const { ok, data } = await api('POST', '/api/admin/tenants', body);
+  const el = document.getElementById('new-tenant-result');
+  if (ok) {
+    el.textContent = '✅ Created!';
+    el.className = 'result success';
+    document.getElementById('t-slug').value = '';
+    document.getElementById('t-name').value = '';
+    document.getElementById('t-team-id').value = '';
+    await loadTenants();
+  } else {
+    el.textContent = '❌ ' + JSON.stringify(data);
+    el.className = 'result error';
+  }
+}
+
+async function toggleActive(id, newActive) {
+  await api('PATCH', `/api/admin/tenants/${id}`, { is_active: newActive });
+  await loadTenants();
+}
+
+async function deleteTenant(id, slug) {
+  if (!confirm(`Delete tenant "${slug}" and all its bots? This cannot be undone.`)) return;
+  await api('DELETE', `/api/admin/tenants/${id}`);
+  await loadTenants();
+}
+
+loadTenants();
+</script>
+{% endblock %}

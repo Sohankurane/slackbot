@@ -2,7 +2,7 @@
 
 import logging
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import select
@@ -20,15 +20,13 @@ templates = Jinja2Templates(directory="app/ui/templates")
 async def dashboard(request: Request):
     sm = get_system_sessionmaker()
     async with sm() as session:
-        result = await session.execute(
-            select(Tenant).where(Tenant.is_active.is_(True))
-        )
+        result = await session.execute(select(Tenant).order_by(Tenant.id))
         tenants = result.scalars().all()
 
         tenant_data = []
         for t in tenants:
             bot_result = await session.execute(
-                select(Bot).where(Bot.tenant_id == t.id, Bot.is_active.is_(True))
+                select(Bot).where(Bot.tenant_id == t.id).order_by(Bot.id)
             )
             bots = bot_result.scalars().all()
             tenant_data.append({"tenant": t, "bots": bots})
@@ -51,4 +49,26 @@ async def compose(request: Request, tenant: str = "prj-sk"):
 
     return templates.TemplateResponse(
         "compose.html", {"request": request, "bots": bots, "tenant": tenant}
+    )
+
+
+@router.get("/admin/manage", response_class=HTMLResponse)
+async def manage_tenants(request: Request):
+    return templates.TemplateResponse("manage_tenants.html", {"request": request})
+
+
+@router.get("/admin/manage/{tenant_slug}", response_class=HTMLResponse)
+async def manage_bots(request: Request, tenant_slug: str):
+    sm = get_system_sessionmaker()
+    async with sm() as session:
+        result = await session.execute(
+            select(Tenant).where(Tenant.slug == tenant_slug)
+        )
+        tenant = result.scalar_one_or_none()
+        if not tenant:
+            raise HTTPException(status_code=404, detail="Tenant not found")
+
+    return templates.TemplateResponse(
+        "manage_bots.html",
+        {"request": request, "tenant": tenant},
     )

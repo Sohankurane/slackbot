@@ -42,6 +42,19 @@ BOT_COMMANDS: dict[str, dict[frozenset, str]] = {
         ),
         frozenset({"info"}): "I'm {bot_slug}, the second bot in this workspace.",
     },
+    "jarvis": {
+        frozenset({"hi", "hello", "hey", "yo"}): "At your service, sir. {bot_slug} online. 🛡️",
+        frozenset({"ping"}): "Systems nominal — {bot_slug}.",
+        frozenset({"help"}): (
+            "*Jarvis commands:*\n"
+            "• `hi` — initiate contact\n"
+            "• `ping` — system check\n"
+            "• `whoami` — workspace info\n"
+            "• `report` — status report"
+        ),
+        frozenset({"whoami"}): "I am {bot_slug}, operating in PRJ-SK2 workspace, served by the same backend as the PRJ-SK bots.",
+        frozenset({"report"}): "All systems operational. {bot_slug} standing by.",
+    },
 }
 
 # Fallback used when a slug isn't in BOT_COMMANDS
