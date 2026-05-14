@@ -46,17 +46,16 @@
 </div>
 
 <script>
-const ADMIN_TOKEN = prompt("Enter admin token:") || "";
 
 function toggleForm(id) {
   const el = document.getElementById(id);
   el.style.display = el.style.display === 'none' ? 'block' : 'none';
 }
-
 async function api(method, url, body) {
   const opts = {
     method,
-    headers: { 'X-Admin-Token': ADMIN_TOKEN },
+    headers: {},
+    credentials: 'same-origin',
   };
   if (body) {
     opts.headers['Content-Type'] = 'application/json';

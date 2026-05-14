@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slack Install — {% if success %}Success{% else %}Failed{% endif %}</title>
+  <link rel="stylesheet" href="/static/auth.css">
+</head>
+<body class="auth-body {% if not success %}auth-body-alt{% endif %}">
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <div class="auth-logo">{% if success %}🎉{% else %}⚠️{% endif %}</div>
+      <div class="auth-brand">
+        {% if success %}Successfully Installed!{% else %}Install Failed{% endif %}
+      </div>
+      <p class="auth-subtitle">{{ message }}</p>
+
+      {% if success and tenant %}
+        <div style="background:#f1f8e9;border-radius:8px;padding:16px;margin:20px 0;font-size:14px;">
+          <div style="margin-bottom:8px;"><b>Workspace:</b> {{ tenant.name }}</div>
+          <div style="margin-bottom:8px;"><b>Team ID:</b> <code>{{ tenant.slack_team_id }}</code></div>
+          <div style="margin-bottom:8px;"><b>Bot:</b> {{ bot.name }}</div>
+          <div><b>App ID:</b> <code>{{ bot.slack_app_id }}</code></div>
+        </div>
+        <p style="font-size:13px;color:#666;text-align:center;">
+          The bot is now active in your workspace.<br>
+          DM it with <code>hi</code> to test it.
+        </p>
+      {% endif %}
+
+      <a href="/admin" class="auth-link-button" style="margin-top:20px;">Go to Admin Dashboard</a>
+
+      <div class="auth-footer">
+        Multi-tenant Slack Bot Platform
+      </div>
+    </div>
+  </div>
+</body>
+</html>

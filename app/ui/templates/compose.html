@@ -99,7 +99,7 @@
 
 <script>
 const TENANT = "{{ tenant }}";
-const ADMIN_TOKEN = prompt("Enter admin token:") || "";
+// admin auth handled by session cookie
 
 function showTab(name) {
   document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
@@ -113,8 +113,8 @@ async function post(url, body) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'X-Admin-Token': ADMIN_TOKEN,
     },
+    credentials: 'same-origin',
     body: JSON.stringify(body),
   });
   return res.json();

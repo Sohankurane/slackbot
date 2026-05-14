@@ -72,3 +72,32 @@ async def manage_bots(request: Request, tenant_slug: str):
         "manage_bots.html",
         {"request": request, "tenant": tenant},
     )
+    
+@router.get("/admin/manage/{tenant_slug}/users", response_class=HTMLResponse)
+async def manage_users(request: Request, tenant_slug: str):
+    sm = get_system_sessionmaker()
+    async with sm() as session:
+        result = await session.execute(
+            select(Tenant).where(Tenant.slug == tenant_slug)
+        )
+        tenant = result.scalar_one_or_none()
+        if not tenant:
+            raise HTTPException(status_code=404, detail="Tenant not found")
+    return templates.TemplateResponse(
+        "manage_users.html",
+        {"request": request, "tenant": tenant},
+    )
+
+@router.get("/admin/templates", response_class=HTMLResponse)
+async def manage_templates(request: Request):
+    sm = get_system_sessionmaker()
+    async with sm() as session:
+        from app.models import SlackAppTemplate
+        result = await session.execute(
+            select(SlackAppTemplate).order_by(SlackAppTemplate.id)
+        )
+        templates_list = result.scalars().all()
+    return templates.TemplateResponse(
+        "manage_templates.html",
+        {"request": request, "templates_list": templates_list},
+    )

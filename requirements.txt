@@ -12,3 +12,6 @@ python-multipart==0.0.10
 httpx==0.27.2
 pip install "psycopg2-binary>=2.9.10"
 aiohttp==3.10.5
+passlib[bcrypt]==1.7.4
+bcrypt==4.0.1
+itsdangerous==2.2.0

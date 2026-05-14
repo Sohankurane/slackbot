@@ -5,8 +5,9 @@
 <div class="page-header">
   <h1>Bots in {{ tenant.name }}</h1>
   <div>
-    <a class="btn" href="/admin/manage">← All tenants</a>
-    <button class="btn-primary" onclick="toggleForm('new-bot-form')">+ Add Bot</button>
+  <a class="btn" href="/admin/manage">← All tenants</a>
+  <a class="btn" href="/admin/manage/{{ tenant.slug }}/users">👥 Users</a>
+  <button class="btn-primary" onclick="toggleForm('new-bot-form')">+ Add Bot</button>
   </div>
 </div>
 
@@ -70,7 +71,6 @@
 <script>
 const TENANT_SLUG = "{{ tenant.slug }}";
 const TENANT_ID = {{ tenant.id }};
-const ADMIN_TOKEN = prompt("Enter admin token:") || "";
 
 function toggleForm(id) {
   const el = document.getElementById(id);
@@ -80,7 +80,8 @@ function toggleForm(id) {
 async function api(method, url, body) {
   const opts = {
     method,
-    headers: { 'X-Admin-Token': ADMIN_TOKEN },
+    headers: {},
+    credentials: 'same-origin',
   };
   if (body) {
     opts.headers['Content-Type'] = 'application/json';

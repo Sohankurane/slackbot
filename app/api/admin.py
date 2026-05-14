@@ -1,14 +1,13 @@
 """Admin JSON API — used by the UI and callable directly."""
 
 import logging
-
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
-from app.api.deps import require_admin_token
+from app.api.deps import get_current_admin
 from app.core.db import get_system_sessionmaker
-from app.models import Bot, Tenant
+from app.models import Bot, SlackUser, Tenant
 from app.schemas.admin import (
     BotCreate,
     BotUpdate,
@@ -19,13 +18,19 @@ from app.schemas.admin import (
     TenantUpdate,
 )
 from app.services.message_sender import send_alert, send_mcq, send_qa
+from app.models import SlackUser  
+from app.services.user_service import (
+    list_users,
+    restore_user,
+    soft_delete_user,
+)
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(
     prefix="/api/admin",
     tags=["admin"],
-    dependencies=[Depends(require_admin_token)],
+    dependencies=[Depends(get_current_admin)],
 )
 
 
@@ -251,3 +256,67 @@ async def api_send_mcq(req: SendMCQRequest, tenant: str):
     )
     logger.info("Admin MCQ sent by bot=%s to channel=%s", bot.slug, req.channel)
     return {"ok": True, "ts": result.get("ts")}
+
+@router.get("/tenants/{tenant_id}/users")
+async def api_list_users(tenant_id: int, status: str = "active"):
+    if status not in ("active", "deleted", "all"):
+        raise HTTPException(status_code=400, detail="status must be active|deleted|all")
+    sm = get_system_sessionmaker()
+    async with sm() as session:
+        users = await list_users(session, tenant_id=tenant_id, status=status)
+        return [
+            {
+                "id": u.id,
+                "slack_user_id": u.slack_user_id,
+                "display_name": u.display_name,
+                "real_name": u.real_name,
+                "email": u.email,
+                "is_deleted": u.is_deleted,
+                "deleted_at": u.deleted_at.isoformat() if u.deleted_at else None,
+                "created_at": u.created_at.isoformat(),
+            }
+            for u in users
+        ]
+
+
+@router.get("/users/{user_id}")
+async def api_get_user(user_id: int):
+    sm = get_system_sessionmaker()
+    async with sm() as session:
+        user = await session.get(SlackUser, user_id)
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        return {
+            "id": user.id,
+            "tenant_id": user.tenant_id,
+            "slack_user_id": user.slack_user_id,
+            "display_name": user.display_name,
+            "real_name": user.real_name,
+            "email": user.email,
+            "is_deleted": user.is_deleted,
+            "deleted_at": user.deleted_at.isoformat() if user.deleted_at else None,
+            "created_at": user.created_at.isoformat(),
+            "updated_at": user.updated_at.isoformat(),
+        }
+
+
+@router.post("/users/{user_id}/soft-delete")
+async def api_soft_delete_user(user_id: int):
+    sm = get_system_sessionmaker()
+    async with sm() as session:
+        user = await soft_delete_user(session, user_id)
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        await session.commit()
+        return {"ok": True, "id": user.id, "deleted_at": user.deleted_at.isoformat()}
+
+
+@router.post("/users/{user_id}/restore")
+async def api_restore_user(user_id: int):
+    sm = get_system_sessionmaker()
+    async with sm() as session:
+        user = await restore_user(session, user_id)
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        await session.commit()
+        return {"ok": True, "id": user.id}

@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}App Templates{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <h1>Slack App Templates</h1>
+</div>
+
+<div class="info-box">
+  <strong>What are these?</strong><br>
+  App templates are reusable Slack app definitions. Anyone can install a template into their own
+  Slack workspace using the install URL below — no manual setup needed. Once installed, a new
+  Tenant + Bot row is created automatically via OAuth.
+</div>
+
+<div class="card">
+  <h2>Available Templates</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Slug</th>
+        <th>Name</th>
+        <th>Scopes</th>
+        <th>Install URL (share this)</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for t in templates_list %}
+      <tr>
+        <td>{{ t.id }}</td>
+        <td><code>{{ t.slug }}</code></td>
+        <td>{{ t.name }}</td>
+        <td style="font-size:11px;">{{ t.default_scopes|join(', ') }}</td>
+        <td>
+          <code id="url-{{ t.id }}">{{ request.url_for('slack_install', template_slug=t.slug) }}</code>
+          <button class="btn" onclick="copyUrl({{ t.id }})">Copy</button>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5">No templates registered yet. Run <code>python -m scripts.seed_app_template</code></td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<script>
+function copyUrl(id) {
+  const el = document.getElementById('url-' + id);
+  navigator.clipboard.writeText(el.textContent).then(() => {
+    const btn = event.target;
+    const orig = btn.textContent;
+    btn.textContent = '✓ Copied';
+    setTimeout(() => { btn.textContent = orig; }, 1500);
+  });
+}
+</script>
+{% endblock %}

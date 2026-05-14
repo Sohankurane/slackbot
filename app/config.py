@@ -18,13 +18,20 @@ class Settings(BaseSettings):
     # Database
     database_url: str = Field(..., description="postgresql+asyncpg://...")
 
-    # Redis 
+    # Redis
     redis_url: str = "redis://localhost:6379/0"
     redis_enabled: bool = True
 
     # Admin UI
     admin_token: str = Field(..., min_length=8)
+    admin_default_username: str = "admin"
+    admin_default_password: str = "admin"
 
+    # Slack OAuth (for public install)
+    slack_app_client_id: str = ""
+    slack_app_client_secret: str = ""
+    slack_oauth_redirect_uri: str = ""
+    
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
@@ -35,5 +42,4 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
-    """Cached so we only parse .env once per process."""
     return Settings()

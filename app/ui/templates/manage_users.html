@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block title %}Users — {{ tenant.name }}{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <h1>Users in {{ tenant.name }}</h1>
+  <div>
+    <a class="btn" href="/admin/manage">← All tenants</a>
+    <a class="btn" href="/admin/manage/{{ tenant.slug }}">View bots</a>
+  </div>
+</div>
+
+<p>Tenant: <code>{{ tenant.slug }}</code> · Team ID: <code>{{ tenant.slack_team_id }}</code></p>
+
+<div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+    <h2>Slack Users</h2>
+    <div class="tabs" style="margin:0;">
+      <button class="tab-btn active" data-status="active" onclick="setStatus('active', event)">Active</button>
+      <button class="tab-btn" data-status="deleted" onclick="setStatus('deleted', event)">Deleted</button>
+      <button class="tab-btn" data-status="all" onclick="setStatus('all', event)">All</button>
+    </div>
+  </div>
+
+  <p style="font-size:13px;color:#666;margin-bottom:12px;">
+    Users get created automatically the first time someone messages any bot in this workspace.
+  </p>
+
+  <table id="users-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Slack User ID</th>
+        <th>Display Name</th>
+        <th>Email</th>
+        <th>Status</th>
+        <th>Joined</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody><tr><td colspan="7">Loading…</td></tr></tbody>
+  </table>
+</div>
+
+<script>
+const TENANT_ID = {{ tenant.id }};
+let currentStatus = "active";
+
+async function api(method, url, body) {
+  const opts = {
+    method,
+    headers: {},
+    credentials: 'same-origin',
+  };
+  if (body) {
+    opts.headers['Content-Type'] = 'application/json';
+    opts.body = JSON.stringify(body);
+  }
+  const res = await fetch(url, opts);
+  return { ok: res.ok, data: await res.json() };
+}
+
+function setStatus(s, evt) {
+  currentStatus = s;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  evt.target.classList.add('active');
+  loadUsers();
+}
+
+async function loadUsers() {
+  const { data } = await api('GET', `/api/admin/tenants/${TENANT_ID}/users?status=${currentStatus}`);
+  const tbody = document.querySelector('#users-table tbody');
+  if (!Array.isArray(data) || data.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7">No ${currentStatus} users</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = data.map(u => {
+    const joined = new Date(u.created_at).toLocaleDateString();
+    const fullName = u.display_name || u.real_name || '';
+    const initial = (fullName || u.slack_user_id || '?').trim().charAt(0).toUpperCase();
+    const colorIdx = (u.id * 7) % 6;
+    const colors = ['#3949ab', '#00897b', '#d81b60', '#f57c00', '#5e35b1', '#43a047'];
+    const avatarColor = colors[colorIdx];
+
+    const statusBadge = u.is_deleted
+      ? `<span style="color:#c62828;">🗑️ Deleted</span>`
+      : `<span style="color:#2e7d32;">✅ Active</span>`;
+    const actionBtn = u.is_deleted
+      ? `<button class="btn" onclick="restoreUser(${u.id})">Restore</button>`
+      : `<button class="btn btn-danger" onclick="softDelete(${u.id}, '${u.slack_user_id}')">Soft Delete</button>`;
+
+    return `
+      <tr>
+        <td>${u.id}</td>
+        <td><code>${u.slack_user_id}</code></td>
+        <td>
+          <div class="user-cell">
+            <span class="avatar" style="background:${avatarColor};">${initial}</span>
+            <span>${fullName || '<em style="color:#999;">unknown</em>'}</span>
+          </div>
+        </td>
+        <td>${u.email || '<em style="color:#999;">—</em>'}</td>
+        <td>${statusBadge}</td>
+        <td>${joined}</td>
+        <td>${actionBtn}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+async function softDelete(id, slackId) {
+  if (!confirm(`Soft-delete user ${slackId}? Their message history stays intact, and they'll be auto-restored if they message a bot again.`)) return;
+  await api('POST', `/api/admin/users/${id}/soft-delete`);
+  await loadUsers();
+}
+
+async function restoreUser(id) {
+  await api('POST', `/api/admin/users/${id}/restore`);
+  await loadUsers();
+}
+
+loadUsers();
+</script>
+{% endblock %}

@@ -37,3 +37,19 @@ async def post_message(
     if not resp.get("ok"):
         logger.error("Slack postMessage failed: %s", resp)
     return resp.data if hasattr(resp, "data") else dict(resp)
+
+async def fetch_user_profile(*, bot_token: str, slack_user_id: str) -> dict | None:
+    """Call Slack's users.info to get display name + email.
+    Returns dict {display_name, real_name, email} or None on failure."""
+    client = AsyncWebClient(token=bot_token)
+    try:
+        resp = await client.users_info(user=slack_user_id)
+        profile = resp.get("user", {}).get("profile", {})
+        return {
+            "display_name": profile.get("display_name") or None,
+            "real_name": profile.get("real_name") or None,
+            "email": profile.get("email") or None,
+        }
+    except Exception as exc:
+        logger.warning("users.info failed for %s: %s", slack_user_id, exc)
+        return None
