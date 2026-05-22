@@ -1,40 +1,112 @@
 {% extends "base.html" %}
-{% block title %}Dashboard{% endblock %}
-{% block content %}
-<h1>Tenants & Bots</h1>
+{% block title %}Dashboard — Slackbot Admin{% endblock %}
+{% block header_title %}Dashboard{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="/static/css/dashboard.css">
+{% endblock %}
+
+{% block content %}
+
+{% set total_tenants = tenant_data|length %}
+{% set total_bots = tenant_data|sum(attribute='bots')|length if false else 0 %}
+{% set active_bots = namespace(count=0) %}
+{% set total_bot_count = namespace(count=0) %}
 {% for item in tenant_data %}
-<div class="card">
-  <div class="card-header">
-    <h2>{{ item.tenant.name }}</h2>
-    <span class="badge">{{ item.tenant.slack_team_id }}</span>
-  </div>
-  <table>
-    <thead>
-      <tr>
-        <th>Bot Slug</th>
-        <th>Name</th>
-        <th>App ID</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for bot in item.bots %}
-      <tr>
-        <td><code>{{ bot.slug }}</code></td>
-        <td>{{ bot.name }}</td>
-        <td><code>{{ bot.slack_app_id }}</code></td>
-        <td>
-          <a class="btn" href="/admin/compose?tenant={{ item.tenant.slug }}">
-            Compose Message
-          </a>
-        </td>
-      </tr>
-      {% else %}
-      <tr><td colspan="4">No active bots</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
+  {% for b in item.bots %}
+    {% set total_bot_count.count = total_bot_count.count + 1 %}
+    {% if b.is_active %}{% set active_bots.count = active_bots.count + 1 %}{% endif %}
+  {% endfor %}
 {% endfor %}
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Welcome back 👋</h1>
+    <p class="page-subtitle">Overview of your Slack bot platform.</p>
+  </div>
+  <div class="page-actions">
+    <a href="/admin/manage" class="btn btn-secondary">Manage tenants</a>
+    <a href="/admin/templates" class="btn btn-primary">Install URLs</a>
+  </div>
+</div>
+
+<!-- Stats -->
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-content">
+      <div class="stat-label">Workspaces</div>
+      <div class="stat-value">{{ total_tenants }}</div>
+      <div class="stat-meta">Active Slack tenants</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-content">
+      <div class="stat-label">Bots</div>
+      <div class="stat-value">{{ total_bot_count.count }}</div>
+      <div class="stat-meta">{{ active_bots.count }} active</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-content">
+      <div class="stat-label">Runtime</div>
+      <div class="stat-value">Live</div>
+      <div class="stat-meta">FastAPI · PostgreSQL · Async</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-content">
+      <div class="stat-label">Auth</div>
+      <div class="stat-value">Secure</div>
+      <div class="stat-meta">bcrypt · session cookies</div>
+    </div>
+  </div>
+</div>
+
+<!-- Tenant overview -->
+<div class="page-header" style="margin-bottom: var(--sp-4);">
+  <div>
+    <h2 class="page-title" style="font-size: 18px;">Workspaces</h2>
+  </div>
+</div>
+
+{% if tenant_data %}
+<div class="tenant-grid">
+  {% for item in tenant_data %}
+  <div class="tenant-card">
+    <div class="tenant-card-header">
+      <div class="tenant-logo">{{ item.tenant.name[0]|upper }}</div>
+      <div class="tenant-info">
+        <div class="tenant-name">{{ item.tenant.name }}</div>
+        <div class="tenant-meta">
+          <code>{{ item.tenant.slug }}</code> &middot;
+          Team ID <code>{{ item.tenant.slack_team_id }}</code>
+        </div>
+      </div>
+      <a href="/admin/manage/{{ item.tenant.slug }}" class="btn btn-secondary btn-sm">View bots →</a>
+    </div>
+    <div class="tenant-bots">
+      {% if item.bots %}
+        {% for bot in item.bots %}
+          <span class="bot-chip {% if not bot.is_active %}inactive{% endif %}">
+            <span class="bot-chip-dot"></span>
+            {{ bot.name }}
+          </span>
+        {% endfor %}
+      {% else %}
+        <span class="bot-chip inactive"><span class="bot-chip-dot"></span> No bots yet</span>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card">
+  <div class="empty">
+    <div class="empty-title">No workspaces yet</div>
+    <div class="empty-desc">Register your first Slack workspace to start receiving messages from your bots.</div>
+    <a href="/admin/manage" class="btn btn-primary">Register a workspace</a>
+  </div>
+</div>
+{% endif %}
+
 {% endblock %}

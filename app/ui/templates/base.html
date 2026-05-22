@@ -4,25 +4,110 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}Slackbot Admin{% endblock %}</title>
-  <link rel="stylesheet" href="/static/app.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/base.css">
+  {% block extra_css %}{% endblock %}
 </head>
 <body>
-  <nav>
-    <div class="nav-brand">🤖 Slackbot Admin</div>
-    <div class="nav-links">
-      <a href="/admin">Dashboard</a>
-      <a href="/admin/manage">Manage</a><a href="/admin/templates">Templates</a>
-      <a href="/admin/compose?tenant=prj-sk">Compose</a>
-      {% if request.session.get('admin_username') %}
-        <span class="nav-user">👤 {{ request.session.get('admin_username') }}</span>
-        <form method="POST" action="/admin/logout" style="display:inline;">
-          <button type="submit" class="nav-logout">Logout</button>
+  <div class="app">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">🤖 Slackbot Admin</div>
+
+      <nav class="sidebar-nav">
+        <div class="sidebar-section">Overview</div>
+        <a href="/admin" class="sidebar-link {% if request.url.path == '/admin' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12L12 3l9 9M5 10v10h14V10"/></svg>
+          <span>Dashboard</span>
+        </a>
+
+        <div class="sidebar-section">Manage</div>
+        <a href="/admin/manage" class="sidebar-link {% if '/admin/manage' in request.url.path and '/users' not in request.url.path %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h18M3 12h18M3 17h18"/></svg>
+          <span>Tenants &amp; Bots</span>
+        </a>
+        <a href="/admin/templates" class="sidebar-link {% if '/admin/templates' in request.url.path %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.27 6.96L12 12.01l8.73-5.05M12 22.08V12"/></svg>
+          <span>App Templates</span>
+        </a>
+
+        <div class="sidebar-section">Communications</div>
+        <a href="/admin/compose?tenant=prj-sk" class="sidebar-link {% if '/admin/compose' in request.url.path %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><path d="M22 6l-10 7L2 6"/></svg>
+          <span>Compose</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        {% set username = request.session.get('admin_username', 'admin') %}
+        <div class="sidebar-user">
+          <div class="sidebar-user-avatar">{{ username[0]|upper }}</div>
+          <div class="sidebar-user-info">
+            <div class="sidebar-user-name">{{ username }}</div>
+            <div class="sidebar-user-role">Administrator</div>
+          </div>
+        </div>
+        <form method="POST" action="/admin/logout">
+          <button type="submit" class="sidebar-logout">Sign out</button>
         </form>
-      {% endif %}
+      </div>
+    </aside>
+
+    <!-- Main content -->
+    <div class="main">
+      <header class="main-header">
+        <div class="main-header-title">{% block header_title %}{% endblock %}</div>
+      </header>
+      <div class="main-content">
+        {% block content %}{% endblock %}
+      </div>
     </div>
-  </nav>
-  <main>
-    {% block content %}{% endblock %}
-  </main>
+  </div>
+
+  <!-- Toast container -->
+  <div class="toast-container" id="toasts"></div>
+
+  <script>
+    
+    window.toast = function(message, type) {
+      const el = document.createElement('div');
+      el.className = 'toast toast-' + (type || 'info');
+      el.textContent = message;
+      document.getElementById('toasts').appendChild(el);
+      setTimeout(() => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateX(20px)';
+        el.style.transition = 'all 200ms';
+        setTimeout(() => el.remove(), 200);
+      }, 3500);
+    };
+
+    window.openModal = function(id) {
+      document.getElementById(id).classList.add('open');
+    };
+    window.closeModal = function(id) {
+      document.getElementById(id).classList.remove('open');
+    };
+    document.addEventListener('click', (e) => {
+      if (e.target.classList.contains('modal-backdrop')) {
+        e.target.classList.remove('open');
+      }
+    });
+
+    window.api = async function(method, url, body) {
+      const opts = { method, credentials: 'same-origin', headers: {} };
+      if (body) {
+        opts.headers['Content-Type'] = 'application/json';
+        opts.body = JSON.stringify(body);
+      }
+      const res = await fetch(url, opts);
+      let data = null;
+      try { data = await res.json(); } catch {}
+      return { ok: res.ok, status: res.status, data };
+    };
+  </script>
+  {% block extra_js %}{% endblock %}
 </body>
 </html>

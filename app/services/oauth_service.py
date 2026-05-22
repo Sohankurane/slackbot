@@ -167,3 +167,35 @@ async def upsert_tenant_and_bot_from_oauth(
 
     await session.flush()
     return tenant, bot
+
+async def find_active_tenant_by_team(
+    session: AsyncSession, *, team_id: str
+) -> Tenant | None:
+    """Requirement A — workspace must be registered AND active."""
+    result = await session.execute(
+        select(Tenant).where(
+            Tenant.slack_team_id == team_id,
+            Tenant.is_active.is_(True),
+        )
+    )
+    return result.scalar_one_or_none()
+
+
+async def find_admin_installer(
+    session: AsyncSession, *, tenant_id: int, email: str
+) -> object | None:
+    """Requirement B1 — installer's email must exist in our DB,
+    belong to this tenant, be marked admin, and not be soft-deleted."""
+    from app.models import SlackUser
+
+    if not email:
+        return None
+    result = await session.execute(
+        select(SlackUser).where(
+            SlackUser.tenant_id == tenant_id,
+            SlackUser.email == email,
+            SlackUser.is_admin.is_(True),
+            SlackUser.is_deleted.is_(False),
+        )
+    )
+    return result.scalar_one_or_none()

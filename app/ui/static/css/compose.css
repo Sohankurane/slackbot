@@ -1,0 +1,166 @@
+/* Compose page */
+
+.compose-context-bar {
+  background: white;
+  border: 1px solid var(--slate-200);
+  border-radius: var(--rad-lg);
+  padding: var(--sp-4) var(--sp-5);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-6);
+  box-shadow: var(--shadow-sm);
+}
+
+.compose-context-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--rad);
+  background: linear-gradient(135deg, var(--indigo-500), var(--indigo-700));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  flex-shrink: 0;
+}
+
+.compose-context-icon svg { width: 20px; height: 20px; }
+
+.compose-context-info { flex: 1; min-width: 0; }
+
+.compose-context-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--slate-900);
+}
+
+.compose-context-meta {
+  font-size: 12px;
+  color: var(--slate-500);
+  margin-top: 2px;
+}
+
+/* Tabs — bigger style than Users page */
+.compose-tabs {
+  display: flex;
+  gap: var(--sp-1);
+  background: var(--slate-100);
+  border-radius: var(--rad);
+  padding: 4px;
+  margin-bottom: var(--sp-5);
+  width: fit-content;
+}
+
+.compose-tab {
+  background: transparent;
+  border: 0;
+  padding: 9px 18px;
+  border-radius: var(--rad-sm);
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--slate-600);
+  cursor: pointer;
+  transition: var(--transition);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.compose-tab:hover { color: var(--slate-900); }
+
+.compose-tab.active {
+  background: white;
+  color: var(--indigo-600);
+  font-weight: 600;
+  box-shadow: var(--shadow-sm);
+}
+
+.compose-tab-icon {
+  width: 16px;
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tab-panel { display: none; }
+.tab-panel.active { display: block; animation: tabIn 200ms ease; }
+
+@keyframes tabIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Form layout inside compose */
+.compose-form {
+  display: grid;
+  gap: var(--sp-4);
+}
+
+.field-row-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-3);
+}
+
+@media (max-width: 600px) {
+  .field-row-2 { grid-template-columns: 1fr; }
+}
+
+.send-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: var(--sp-3);
+  padding-top: var(--sp-4);
+  border-top: 1px solid var(--slate-100);
+  gap: var(--sp-3);
+}
+
+.send-bar-hint {
+  font-size: 12px;
+  color: var(--slate-500);
+}
+
+/* Severity dropdown — make options visually meaningful */
+.severity-pills {
+  display: flex;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}
+
+.severity-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border: 2px solid var(--slate-200);
+  border-radius: var(--rad);
+  cursor: pointer;
+  transition: var(--transition);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--slate-700);
+  background: white;
+  user-select: none;
+}
+
+.severity-pill:hover { border-color: var(--slate-300); }
+
+.severity-pill input { display: none; }
+
+.severity-pill.selected {
+  border-color: var(--indigo-500);
+  background: var(--indigo-50);
+  color: var(--indigo-700);
+}
+
+.severity-pill .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.severity-pill.info-pill .dot { background: var(--indigo-500); }
+.severity-pill.warning-pill .dot { background: var(--amber-500); }
+.severity-pill.critical-pill .dot { background: var(--red-500); }

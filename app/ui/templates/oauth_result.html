@@ -4,7 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Slack Install — {% if success %}Success{% else %}Failed{% endif %}</title>
-  <link rel="stylesheet" href="/static/auth.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/auth.css">
 </head>
 <body class="auth-body {% if not success %}auth-body-alt{% endif %}">
   <div class="auth-wrap">
@@ -16,15 +19,15 @@
       <p class="auth-subtitle">{{ message }}</p>
 
       {% if success and tenant %}
-        <div style="background:#f1f8e9;border-radius:8px;padding:16px;margin:20px 0;font-size:14px;">
-          <div style="margin-bottom:8px;"><b>Workspace:</b> {{ tenant.name }}</div>
-          <div style="margin-bottom:8px;"><b>Team ID:</b> <code>{{ tenant.slack_team_id }}</code></div>
-          <div style="margin-bottom:8px;"><b>Bot:</b> {{ bot.name }}</div>
-          <div><b>App ID:</b> <code>{{ bot.slack_app_id }}</code></div>
+        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:18px;margin:20px 0;font-size:13.5px;line-height:1.8;">
+          <div><strong>Workspace:</strong> {{ tenant.name }}</div>
+          <div><strong>Team ID:</strong> <code>{{ tenant.slack_team_id }}</code></div>
+          <div><strong>Bot:</strong> {{ bot.name }}</div>
+          <div><strong>App ID:</strong> <code>{{ bot.slack_app_id }}</code></div>
         </div>
-        <p style="font-size:13px;color:#666;text-align:center;">
+        <p style="font-size:13px;color:#64748b;text-align:center;line-height:1.6;">
           The bot is now active in your workspace.<br>
-          DM it with <code>hi</code> to test it.
+          DM it with <code>hi</code> to test it out.
         </p>
       {% endif %}
 

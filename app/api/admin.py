@@ -24,6 +24,7 @@ from app.services.user_service import (
     restore_user,
     soft_delete_user,
 )
+from app.services.user_service import add_pending_admin
 
 logger = logging.getLogger(__name__)
 
@@ -271,6 +272,7 @@ async def api_list_users(tenant_id: int, status: str = "active"):
                 "display_name": u.display_name,
                 "real_name": u.real_name,
                 "email": u.email,
+                "is_admin": u.is_admin,
                 "is_deleted": u.is_deleted,
                 "deleted_at": u.deleted_at.isoformat() if u.deleted_at else None,
                 "created_at": u.created_at.isoformat(),
@@ -320,3 +322,33 @@ async def api_restore_user(user_id: int):
             raise HTTPException(status_code=404, detail="User not found")
         await session.commit()
         return {"ok": True, "id": user.id}
+    
+@router.post("/users/{user_id}/set-admin")
+async def api_set_user_admin(user_id: int, make_admin: bool = True):
+    """Mark or unmark a SlackUser as an authorized installer (Requirement B1)."""
+    sm = get_system_sessionmaker()
+    async with sm() as session:
+        user = await session.get(SlackUser, user_id)
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        user.is_admin = make_admin
+        await session.commit()
+        logger.info(
+            "User %s is_admin set to %s by admin", user.slack_user_id, make_admin
+        )
+        return {"ok": True, "id": user.id, "is_admin": user.is_admin}
+    
+@router.post("/tenants/{tenant_id}/authorize-installer")
+async def api_authorize_installer(tenant_id: int, email: str):
+    """Pre-authorize an email as an installer admin (Requirement B —
+    works even if the person isn't a Slack user yet)."""
+    if not email or "@" not in email:
+        raise HTTPException(status_code=400, detail="Valid email required")
+    sm = get_system_sessionmaker()
+    async with sm() as session:
+        tenant = await session.get(Tenant, tenant_id)
+        if not tenant:
+            raise HTTPException(status_code=404, detail="Tenant not found")
+        user = await add_pending_admin(session, tenant_id=tenant_id, email=email)
+        await session.commit()
+        return {"ok": True, "id": user.id, "email": user.email}

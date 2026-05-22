@@ -90,6 +90,7 @@ async def manage_users(request: Request, tenant_slug: str):
 
 @router.get("/admin/templates", response_class=HTMLResponse)
 async def manage_templates(request: Request):
+    from app.config import get_settings
     sm = get_system_sessionmaker()
     async with sm() as session:
         from app.models import SlackAppTemplate
@@ -99,5 +100,71 @@ async def manage_templates(request: Request):
         templates_list = result.scalars().all()
     return templates.TemplateResponse(
         "manage_templates.html",
-        {"request": request, "templates_list": templates_list},
+        {
+            "request": request,
+            "templates_list": templates_list,
+            "public_base_url": get_settings().public_base_url,
+        },
+    )
+    
+@router.get("/admin/manage/{tenant_slug}/history", response_class=HTMLResponse)
+async def user_history(request: Request, tenant_slug: str, page: int = 1):
+    from sqlalchemy import and_, func
+    from app.models import Message, SlackUser, Bot
+
+    PAGE_SIZE = 25
+    page = max(1, page)
+    offset = (page - 1) * PAGE_SIZE
+
+    sm = get_system_sessionmaker()
+    async with sm() as session:
+        result = await session.execute(select(Tenant).where(Tenant.slug == tenant_slug))
+        tenant = result.scalar_one_or_none()
+        if not tenant:
+            raise HTTPException(status_code=404, detail="Tenant not found")
+
+        # Total count for pagination
+        total = (await session.execute(
+            select(func.count(Message.id)).where(Message.tenant_id == tenant.id)
+        )).scalar_one()
+
+        # Joined page of rows
+        stmt = (
+            select(Message, SlackUser, Bot)
+            .outerjoin(SlackUser, and_(
+                SlackUser.tenant_id == Message.tenant_id,
+                SlackUser.slack_user_id == Message.slack_user_id,
+            ))
+            .outerjoin(Bot, Bot.id == Message.bot_id)
+            .where(Message.tenant_id == tenant.id)
+            .order_by(Message.created_at.desc())
+            .limit(PAGE_SIZE)
+            .offset(offset)
+        )
+        rows = (await session.execute(stmt)).all()
+
+        history = []
+        for msg, user, bot in rows:
+            history.append({
+                "timestamp": msg.created_at,
+                "user_name": (user.display_name or user.real_name) if user else None,
+                "user_email": user.email if user else None,
+                "slack_user_id": msg.slack_user_id,
+                "bot_name": bot.name if bot else "—",
+                "direction": msg.direction,
+                "kind": msg.kind,
+                "text": (msg.text or "")[:120],
+            })
+
+    total_pages = max(1, (total + PAGE_SIZE - 1) // PAGE_SIZE)
+    return templates.TemplateResponse(
+        "user_history.html",
+        {
+            "request": request,
+            "tenant": tenant,
+            "history": history,
+            "page": page,
+            "total_pages": total_pages,
+            "total": total,
+        },
     )

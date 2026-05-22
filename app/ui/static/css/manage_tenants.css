@@ -1,0 +1,74 @@
+/* Manage Tenants page */
+
+.tenants-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--sp-4);
+  gap: var(--sp-3);
+}
+
+.tenants-search {
+  position: relative;
+  flex: 1;
+  max-width: 320px;
+}
+
+.tenants-search input {
+  width: 100%;
+  padding: 8px 12px 8px 36px;
+  border: 1px solid var(--slate-300);
+  border-radius: var(--rad);
+  font-size: 13px;
+  background: white;
+  transition: var(--transition);
+}
+
+.tenants-search input:focus {
+  outline: none;
+  border-color: var(--indigo-500);
+  box-shadow: 0 0 0 3px rgb(99 102 241 / 0.15);
+}
+
+.tenants-search svg {
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  color: var(--slate-400);
+  pointer-events: none;
+}
+
+.team-id {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  background: var(--slate-100);
+  color: var(--slate-700);
+  padding: 3px 8px;
+  border-radius: var(--rad-sm);
+  display: inline-block;
+}
+
+.tenant-slug-cell {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+
+.tenant-mini-logo {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, var(--indigo-500), var(--indigo-700));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.tenant-name-strong { font-weight: 600; color: var(--slate-900); }

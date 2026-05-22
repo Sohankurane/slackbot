@@ -24,6 +24,30 @@ async def get_or_create_user(
     )
     user = (await session.execute(stmt)).scalar_one_or_none()
 
+    # If no exact match, check for a pre-authorized placeholder by email
+    if user is None and profile and profile.get("email"):
+        incoming_email = profile["email"].strip().lower()
+        placeholder = (await session.execute(
+            select(SlackUser).where(
+                SlackUser.tenant_id == tenant_id,
+                SlackUser.email == incoming_email,
+                SlackUser.slack_user_id.like("PENDING:%"),
+            )
+        )).scalar_one_or_none()
+        if placeholder:
+            # Upgrade placeholder to a real user
+            placeholder.slack_user_id = slack_user_id
+            placeholder.display_name = profile.get("display_name") or placeholder.display_name
+            placeholder.real_name = profile.get("real_name") or placeholder.real_name
+            placeholder.is_deleted = False
+            placeholder.deleted_at = None
+            await session.flush()
+            logger.info(
+                "Merged pending admin email=%s into slack_user=%s",
+                incoming_email, slack_user_id,
+            )
+            return placeholder
+
     if user is None:
         user = SlackUser(
             tenant_id=tenant_id,
@@ -76,7 +100,6 @@ async def restore_user(session: AsyncSession, user_id: int) -> SlackUser | None:
     logger.info("Restored SlackUser id=%s slack_user=%s", user.id, user.slack_user_id)
     return user
 
-
 async def list_users(
     session: AsyncSession,
     *,
@@ -91,3 +114,44 @@ async def list_users(
     stmt = stmt.order_by(SlackUser.id.desc())
     result = await session.execute(stmt)
     return list(result.scalars().all())
+
+async def add_pending_admin(
+    session: AsyncSession,
+    *,
+    tenant_id: int,
+    email: str,
+) -> "SlackUser":
+    from app.models import SlackUser
+
+    email = email.strip().lower()
+
+    # Already exists with this email? Just mark admin.
+    existing = (await session.execute(
+        select(SlackUser).where(
+            SlackUser.tenant_id == tenant_id,
+            SlackUser.email == email,
+        )
+    )).scalar_one_or_none()
+
+    if existing:
+        existing.is_admin = True
+        existing.is_deleted = False
+        existing.deleted_at = None
+        await session.flush()
+        return existing
+
+    # Create placeholder
+    placeholder_id = f"PENDING:{email}"
+    user = SlackUser(
+        tenant_id=tenant_id,
+        slack_user_id=placeholder_id,
+        email=email,
+        display_name=None,
+        real_name=None,
+        is_admin=True,
+        is_deleted=False,
+    )
+    session.add(user)
+    await session.flush()
+    logger.info("Pre-authorized installer email=%s for tenant=%s", email, tenant_id)
+    return user

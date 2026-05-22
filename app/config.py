@@ -32,6 +32,9 @@ class Settings(BaseSettings):
     slack_app_client_secret: str = ""
     slack_oauth_redirect_uri: str = ""
     
+    # Public base URL used in install links shown to users
+    public_base_url: str = ""
+    
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
