@@ -6,6 +6,7 @@ from app.models.message import Message
 from app.models.admin_user import AdminUser
 from app.models.slack_app_template import SlackAppTemplate
 from app.models.slack_oauth_state import SlackOAuthState
+from app.models.ai_turn import AIConversationTurn
 
 __all__ = [
     "Base",
@@ -15,4 +16,7 @@ __all__ = [
     "SlackUser",
     "Message",
     "AdminUser",
+    "SlackAppTemplate",
+    "SlackOAuthState",
+    "AIConversationTurn",
 ]

@@ -1,7 +1,11 @@
 """Bot = one Slack app installed in a tenant's workspace."""
 
-from sqlalchemy import Boolean, ForeignKey, String, UniqueConstraint
+from sqlalchemy import Boolean, ForeignKey, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.models.tenant import Tenant
 
 from app.models.base import Base, TimestampMixin
 
@@ -38,6 +42,9 @@ class Bot(Base, TimestampMixin):
     slack_app_id: Mapped[str] = mapped_column(String(32), nullable=False)
 
     is_active: Mapped[Boolean] = mapped_column(Boolean, default=True, nullable=False)
+    # AI fallback settings
+    ai_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    ai_system_prompt: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     tenant: Mapped["Tenant"] = relationship(back_populates="bots")  # noqa: F821
 

@@ -138,7 +138,20 @@ async def _handle_event(*, bot_id: int, tenant_slug: str, event: dict) -> None:
         )
         await session.commit()
 
+        # Get response from command handler 
         response = await handle_message(bot=bot, text=text)
+
+        # AI fallback — only if no command matched AND this bot has AI enabled
+        used_ai = False
+        if response is None and getattr(bot, "ai_enabled", False) and user:
+            from app.services.ai_service import generate_ai_reply
+            response = await generate_ai_reply(
+                session, bot=bot, slack_user_id=user, user_message=text
+            )
+            used_ai = response is not None
+            if used_ai:
+                await session.commit()  # persist the AI conversation turns
+
         if response is None:
             return
 
@@ -158,7 +171,7 @@ async def _handle_event(*, bot_id: int, tenant_slug: str, event: dict) -> None:
                 tenant_id=bot.tenant_id,
                 bot_id=bot.id,
                 direction="outbound",
-                kind="message",
+                kind="ai_reply" if used_ai else "message",
                 slack_channel_id=channel,
                 slack_user_id=user,
                 slack_ts=ts,

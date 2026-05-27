@@ -25,6 +25,7 @@ from app.services.user_service import (
     soft_delete_user,
 )
 from app.services.user_service import add_pending_admin
+from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 
@@ -148,6 +149,8 @@ async def list_bots(tenant_slug: str):
                 "slack_app_id": b.slack_app_id,
                 "slack_bot_user_id": b.slack_bot_user_id,
                 "is_active": b.is_active,
+                "ai_enabled": b.ai_enabled,
+                "ai_system_prompt": b.ai_system_prompt,
             }
             for b, _ in rows
         ]
@@ -352,3 +355,29 @@ async def api_authorize_installer(tenant_id: int, email: str):
         user = await add_pending_admin(session, tenant_id=tenant_id, email=email)
         await session.commit()
         return {"ok": True, "id": user.id, "email": user.email}
+    
+class BotAIUpdate(BaseModel):
+    ai_enabled: bool | None = None
+    ai_system_prompt: str | None = None
+
+
+@router.patch("/bots/{bot_id}/ai")
+async def api_update_bot_ai(bot_id: int, req: BotAIUpdate):
+    """Toggle AI on/off and set a custom system prompt for a bot."""
+    sm = get_system_sessionmaker()
+    async with sm() as session:
+        bot = await session.get(Bot, bot_id)
+        if not bot:
+            raise HTTPException(status_code=404, detail="Bot not found")
+        if req.ai_enabled is not None:
+            bot.ai_enabled = req.ai_enabled
+        if req.ai_system_prompt is not None:
+            bot.ai_system_prompt = req.ai_system_prompt or None
+        await session.commit()
+        logger.info("Bot %s AI settings updated (enabled=%s)", bot.slug, bot.ai_enabled)
+        return {
+            "ok": True,
+            "id": bot.id,
+            "ai_enabled": bot.ai_enabled,
+            "ai_system_prompt": bot.ai_system_prompt,
+        }

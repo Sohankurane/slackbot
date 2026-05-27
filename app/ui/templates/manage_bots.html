@@ -52,6 +52,7 @@
             <th>Slug</th>
             <th>App ID</th>
             <th>Bot User ID</th>
+             <th>AI</th>
             <th>Status</th>
             <th style="text-align:right;">Actions</th>
           </tr>
@@ -113,6 +114,36 @@
   </div>
 </div>
 
+<!-- AI Settings Modal -->
+<div class="modal-backdrop" id="ai-modal">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:560px;">
+    <div class="modal-header">
+      <div class="modal-title">AI Settings</div>
+      <button class="modal-close" onclick="closeModal('ai-modal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="info-box" style="margin-bottom:var(--sp-4);">
+        When AI is enabled, messages that don't match a fixed command are answered
+        by an LLM (Groq). The bot remembers recent context per user.
+      </div>
+      <div class="field">
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+          <input type="checkbox" id="ai-enabled" style="width:auto;">
+          <span>Enable AI fallback for this bot</span>
+        </label>
+      </div>
+      <div class="field">
+        <label>System Prompt <small>(optional — defines the bot's personality)</small></label>
+        <textarea id="ai-prompt" rows="4" placeholder="e.g. You are Jarvis, a witty assistant. Keep replies short and helpful."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('ai-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveAI()">Save AI Settings</button>
+    </div>
+  </div>
+</div>
+
 {% endblock %}
 
 {% block extra_js %}
@@ -142,6 +173,11 @@ async function loadBots() {
     const statusBadge = b.is_active
       ? '<span class="badge badge-active">Active</span>'
       : '<span class="badge badge-disabled">Disabled</span>';
+
+    const aiBadge = b.ai_enabled
+      ? '<span class="badge badge-info" style="background:#ede9fe;color:#6d28d9;">✨ AI On</span>'
+      : '<span class="value-empty">Off</span>';
+
     return `
       <tr>
         <td>
@@ -152,10 +188,11 @@ async function loadBots() {
         </td>
         <td><code>${escapeHtml(b.slug)}</code></td>
         <td><code>${escapeHtml(b.slack_app_id)}</code></td>
-        <td><code>${escapeHtml(b.slack_bot_user_id)}</code></td>
+        <td>${aiBadge}</td>
         <td>${statusBadge}</td>
         <td>
           <div class="td-actions">
+            <button class="btn btn-sm" onclick='openAI(${b.id}, ${b.ai_enabled}, ${JSON.stringify(b.ai_system_prompt || "")})'>AI</button>
             <button class="btn btn-sm" onclick="toggleActive(${b.id}, ${!b.is_active})">${b.is_active ? 'Disable' : 'Enable'}</button>
             <button class="btn btn-danger btn-sm" onclick="deleteBot(${b.id}, '${escapeHtml(b.slug)}')">Delete</button>
           </div>
@@ -212,5 +249,29 @@ async function deleteBot(id, slug) {
 }
 
 loadBots();
+
+let aiCurrentBotId = null;
+
+function openAI(botId, enabled, prompt) {
+  aiCurrentBotId = botId;
+  document.getElementById('ai-enabled').checked = !!enabled;
+  document.getElementById('ai-prompt').value = prompt || '';
+  openModal('ai-modal');
+}
+
+async function saveAI() {
+  const body = {
+    ai_enabled: document.getElementById('ai-enabled').checked,
+    ai_system_prompt: document.getElementById('ai-prompt').value.trim(),
+  };
+  const { ok } = await api('PATCH', `/api/admin/bots/${aiCurrentBotId}/ai`, body);
+  if (ok) {
+    toast('AI settings saved', 'success');
+    closeModal('ai-modal');
+    await loadBots();
+  } else {
+    toast('Failed to save', 'error');
+  }
+}
 </script>
 {% endblock %}

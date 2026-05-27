@@ -32,6 +32,11 @@ class Settings(BaseSettings):
     slack_app_client_secret: str = ""
     slack_oauth_redirect_uri: str = ""
     
+    # Groq AI
+    groq_api_key: str = ""
+    groq_model: str = "llama-3.3-70b-versatile"
+    ai_context_turns: int = 10  #past messages to remember
+    
     # Public base URL used in install links shown to users
     public_base_url: str = ""
     

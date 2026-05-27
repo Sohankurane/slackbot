@@ -69,7 +69,6 @@ def _get_commands(bot_slug: str) -> dict[frozenset, str]:
 
 
 async def handle_message(*, bot: Bot, text: str) -> str | None:
-    """Return response text, or None if the bot should stay silent."""
     cmd = _normalize(text)
     if not cmd:
         return None

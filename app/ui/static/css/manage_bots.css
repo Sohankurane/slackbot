@@ -94,3 +94,4 @@
 @media (max-width: 600px) {
   .form-grid-2 { grid-template-columns: 1fr; }
 }
+.value-empty { color: var(--slate-400); }
