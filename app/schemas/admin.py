@@ -37,7 +37,7 @@ class TenantCreate(BaseModel):
 class TenantUpdate(BaseModel):
     name: str | None = None
     is_active: bool | None = None
-
+    access_control_enabled: bool | None = None
 
 # --- Bot CRUD ---
 

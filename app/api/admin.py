@@ -7,7 +7,7 @@ from sqlalchemy.exc import IntegrityError
 
 from app.api.deps import get_current_admin
 from app.core.db import get_system_sessionmaker
-from app.models import Bot, SlackUser, Tenant
+from app.models import Bot, SlackUser, Tenant, Group
 from app.schemas.admin import (
     BotCreate,
     BotUpdate,
@@ -26,6 +26,11 @@ from app.services.user_service import (
 )
 from app.services.user_service import add_pending_admin
 from pydantic import BaseModel
+from pydantic import BaseModel
+from app.services.group_service import (
+    add_member, create_group, get_group_members,
+    list_groups, remove_member,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -65,6 +70,7 @@ async def list_tenants():
                 "name": t.name,
                 "slack_team_id": t.slack_team_id,
                 "is_active": t.is_active,
+                "access_control_enabled": t.access_control_enabled,
             }
             for t in tenants
         ]
@@ -110,9 +116,12 @@ async def update_tenant(tenant_id: int, req: TenantUpdate):
             tenant.name = req.name
         if req.is_active is not None:
             tenant.is_active = req.is_active
+        if req.access_control_enabled is not None:
+            tenant.access_control_enabled = req.access_control_enabled
         await session.commit()
         logger.info("Updated tenant %s", tenant.slug)
         return {"ok": True, "id": tenant.id}
+
 
 
 @router.delete("/tenants/{tenant_id}")
@@ -381,3 +390,101 @@ async def api_update_bot_ai(bot_id: int, req: BotAIUpdate):
             "ai_enabled": bot.ai_enabled,
             "ai_system_prompt": bot.ai_system_prompt,
         }
+        
+@router.get("/analytics")
+async def api_analytics():
+    """Dashboard metrics + 14-day message time series."""
+    from app.services.analytics_service import compute_dashboard_metrics
+    sm = get_system_sessionmaker()
+    async with sm() as session:
+        return await compute_dashboard_metrics(session)
+    
+class GroupCreate(BaseModel):
+    name: str
+    can_use_bot: bool = True
+
+
+class GroupUpdate(BaseModel):
+    name: str | None = None
+    can_use_bot: bool | None = None
+
+
+class MemberReq(BaseModel):
+    slack_user_id: str
+
+
+@router.get("/tenants/{tenant_id}/groups")
+async def api_list_groups(tenant_id: int):
+    sm = get_system_sessionmaker()
+    async with sm() as session:
+        return await list_groups(session, tenant_id=tenant_id)
+
+
+@router.post("/tenants/{tenant_id}/groups")
+async def api_create_group(tenant_id: int, req: GroupCreate):
+    if not req.name.strip():
+        raise HTTPException(status_code=400, detail="Group name required")
+    sm = get_system_sessionmaker()
+    async with sm() as session:
+        from sqlalchemy.exc import IntegrityError
+        try:
+            g = await create_group(
+                session, tenant_id=tenant_id, name=req.name, can_use_bot=req.can_use_bot
+            )
+            await session.commit()
+        except IntegrityError:
+            await session.rollback()
+            raise HTTPException(status_code=409, detail="Group name already exists")
+        return {"ok": True, "id": g.id}
+
+
+@router.patch("/groups/{group_id}")
+async def api_update_group(group_id: int, req: GroupUpdate):
+    sm = get_system_sessionmaker()
+    async with sm() as session:
+        g = await session.get(Group, group_id)
+        if not g:
+            raise HTTPException(status_code=404, detail="Group not found")
+        if req.name is not None:
+            g.name = req.name.strip()
+        if req.can_use_bot is not None:
+            g.can_use_bot = req.can_use_bot
+        await session.commit()
+        return {"ok": True, "id": g.id, "can_use_bot": g.can_use_bot}
+
+
+@router.delete("/groups/{group_id}")
+async def api_delete_group(group_id: int):
+    sm = get_system_sessionmaker()
+    async with sm() as session:
+        g = await session.get(Group, group_id)
+        if not g:
+            raise HTTPException(status_code=404, detail="Group not found")
+        await session.delete(g)
+        await session.commit()
+        return {"ok": True}
+
+
+@router.get("/groups/{group_id}/members")
+async def api_group_members(group_id: int):
+    sm = get_system_sessionmaker()
+    async with sm() as session:
+        return await get_group_members(session, group_id=group_id)
+
+
+@router.post("/groups/{group_id}/members")
+async def api_add_member(group_id: int, req: MemberReq):
+    sm = get_system_sessionmaker()
+    async with sm() as session:
+        await add_member(session, group_id=group_id, slack_user_id=req.slack_user_id)
+        await session.commit()
+        return {"ok": True}
+
+
+@router.delete("/groups/{group_id}/members/{slack_user_id}")
+async def api_remove_member(group_id: int, slack_user_id: str):
+    sm = get_system_sessionmaker()
+    async with sm() as session:
+        await remove_member(session, group_id=group_id, slack_user_id=slack_user_id)
+        await session.commit()
+        return {"ok": True}

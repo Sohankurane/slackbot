@@ -1,146 +1,75 @@
 {% extends "base.html" %}
 {% block title %}Bots — {{ tenant.name }}{% endblock %}
-{% block header_title %}{{ tenant.name }} · Bots{% endblock %}
 
-{% block extra_css %}
-<link rel="stylesheet" href="/static/css/manage_bots.css">
-{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="/static/css/manage_bots.css">{% endblock %}
 
 {% block content %}
 
 <div class="page-header">
   <div>
     <h1 class="page-title">Bots</h1>
-    <p class="page-subtitle">Slack apps installed in this workspace.</p>
+    <p class="page-subtitle">Slack apps installed in this workspace</p>
   </div>
   <div class="page-actions">
-    <a class="btn btn-secondary" href="/admin/manage">← All tenants</a>
-    <a class="btn btn-secondary" href="/admin/manage/{{ tenant.slug }}/users">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-      Users
-    </a>
+    <a class="btn btn-secondary" href="/admin/manage">All tenants</a>
+    <a class="btn btn-secondary" href="/admin/manage/{{ tenant.slug }}/users">Users</a>
+    <a class="btn btn-secondary" href="/admin/manage/{{ tenant.slug }}/history">History</a>
+    <a class="btn btn-secondary" href="/admin/manage/{{ tenant.slug }}/groups">Groups</a>
     <button class="btn btn-primary" onclick="openModal('new-bot-modal')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+      <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>
       Add Bot
     </button>
   </div>
 </div>
 
-<div class="bot-context-bar">
-  <div class="bot-context-logo">{{ tenant.name[0]|upper }}</div>
-  <div class="bot-context-info">
-    <div class="bot-context-name">{{ tenant.name }}</div>
-    <div class="bot-context-meta">
-      Slug <code>{{ tenant.slug }}</code> · Team ID <code>{{ tenant.slack_team_id }}</code>
-    </div>
-  </div>
+<div class="ctx-bar">
+  <div class="ctx-logo">{{ tenant.name[0]|upper }}</div>
+  <div><div class="ctx-name">{{ tenant.name }}</div><div class="ctx-meta">Slug <code>{{ tenant.slug }}</code> · Team ID <code>{{ tenant.slack_team_id }}</code></div></div>
 </div>
 
 <div class="card">
-  <div class="card-header">
-    <div>
-      <div class="card-title">All Bots</div>
-      <div class="card-subtitle">Each row is one Slack app installed in this workspace.</div>
-    </div>
-  </div>
+  <div class="card-header"><div><div class="card-title">All Bots</div></div></div>
   <div class="card-body no-pad">
     <div class="table-wrap">
       <table>
-        <thead>
-          <tr>
-            <th>Bot</th>
-            <th>Slug</th>
-            <th>App ID</th>
-            <th>Bot User ID</th>
-             <th>AI</th>
-            <th>Status</th>
-            <th style="text-align:right;">Actions</th>
-          </tr>
-        </thead>
-        <tbody id="bots-tbody">
-          <tr><td colspan="6" style="color:var(--slate-500);text-align:center;padding:var(--sp-8);">Loading…</td></tr>
-        </tbody>
+        <thead><tr><th>Bot</th><th>Slug</th><th>App ID</th><th>AI</th><th>Status</th><th style="text-align:right;">Actions</th></tr></thead>
+        <tbody id="bots-tbody"><tr><td colspan="6" style="text-align:center;padding:var(--sp-8);color:var(--n-60);">Loading…</td></tr></tbody>
       </table>
     </div>
   </div>
 </div>
 
-<!-- New Bot Modal -->
+<!-- Add Bot Modal -->
 <div class="modal-backdrop" id="new-bot-modal">
   <div class="modal" onclick="event.stopPropagation()" style="max-width:560px;">
-    <div class="modal-header">
-      <div class="modal-title">Add Bot to {{ tenant.name }}</div>
-      <button class="modal-close" onclick="closeModal('new-bot-modal')">&times;</button>
-    </div>
+    <div class="modal-header"><div class="modal-title">Add Bot</div><button class="modal-close" onclick="closeModal('new-bot-modal')">&times;</button></div>
     <div class="modal-body">
-      <div class="form-help">
-        First create the Slack app at <a href="https://api.slack.com/apps" target="_blank">api.slack.com/apps</a>,
-        then paste its credentials below. For a fully automated install instead, use the
-        <a href="/admin/templates">App Templates</a> page.
-      </div>
+      <div class="form-help">Create the Slack app at <a href="https://api.slack.com/apps" target="_blank">api.slack.com/apps</a>, then paste its credentials.</div>
       <div class="form-grid-2">
-        <div class="field">
-          <label>Slug <small>(used in logs)</small></label>
-          <input type="text" id="b-slug" placeholder="my-bot">
-        </div>
-        <div class="field">
-          <label>Name</label>
-          <input type="text" id="b-name" placeholder="My Bot">
-        </div>
+        <div class="field"><label>Slug</label><input type="text" id="b-slug" placeholder="my-bot"></div>
+        <div class="field"><label>Name</label><input type="text" id="b-name" placeholder="My Bot"></div>
       </div>
-      <div class="field">
-        <label>Bot Token <small>(starts with <code>xoxb-</code>)</small></label>
-        <input type="text" id="b-token" placeholder="xoxb-...">
-      </div>
-      <div class="field">
-        <label>Signing Secret</label>
-        <input type="text" id="b-signing" placeholder="abc123...">
-      </div>
+      <div class="field"><label>Bot Token</label><input type="text" id="b-token" placeholder="xoxb-..."></div>
+      <div class="field"><label>Signing Secret</label><input type="text" id="b-signing" placeholder="abc123..."></div>
       <div class="form-grid-2">
-        <div class="field">
-          <label>App ID <small>(starts with <code>A</code>)</small></label>
-          <input type="text" id="b-app-id" placeholder="A0XXXXXX">
-        </div>
-        <div class="field">
-          <label>Bot User ID <small>(starts with <code>U</code>)</small></label>
-          <input type="text" id="b-user-id" placeholder="U0XXXXXX">
-        </div>
+        <div class="field"><label>App ID</label><input type="text" id="b-app-id" placeholder="A0XXXXXX"></div>
+        <div class="field"><label>Bot User ID</label><input type="text" id="b-user-id" placeholder="U0XXXXXX"></div>
       </div>
     </div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="closeModal('new-bot-modal')">Cancel</button>
-      <button class="btn btn-primary" onclick="createBot()">Add Bot</button>
-    </div>
+    <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('new-bot-modal')">Cancel</button><button class="btn btn-primary" onclick="createBot()">Add Bot</button></div>
   </div>
 </div>
 
-<!-- AI Settings Modal -->
+<!-- AI Modal -->
 <div class="modal-backdrop" id="ai-modal">
   <div class="modal" onclick="event.stopPropagation()" style="max-width:560px;">
-    <div class="modal-header">
-      <div class="modal-title">AI Settings</div>
-      <button class="modal-close" onclick="closeModal('ai-modal')">&times;</button>
-    </div>
+    <div class="modal-header"><div class="modal-title">AI Settings</div><button class="modal-close" onclick="closeModal('ai-modal')">&times;</button></div>
     <div class="modal-body">
-      <div class="info-box" style="margin-bottom:var(--sp-4);">
-        When AI is enabled, messages that don't match a fixed command are answered
-        by an LLM (Groq). The bot remembers recent context per user.
-      </div>
-      <div class="field">
-        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
-          <input type="checkbox" id="ai-enabled" style="width:auto;">
-          <span>Enable AI fallback for this bot</span>
-        </label>
-      </div>
-      <div class="field">
-        <label>System Prompt <small>(optional — defines the bot's personality)</small></label>
-        <textarea id="ai-prompt" rows="4" placeholder="e.g. You are Jarvis, a witty assistant. Keep replies short and helpful."></textarea>
-      </div>
+      <div class="info-box">When enabled, messages that don't match a command are answered by an LLM with short context memory.</div>
+      <div class="field"><label style="display:flex;align-items:center;gap:10px;cursor:pointer;"><input type="checkbox" id="ai-enabled" style="width:auto;"><span>Enable AI fallback</span></label></div>
+      <div class="field"><label>System Prompt <small>(optional personality)</small></label><textarea id="ai-prompt" rows="4" placeholder="You are a helpful assistant…"></textarea></div>
     </div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="closeModal('ai-modal')">Cancel</button>
-      <button class="btn btn-primary" onclick="saveAI()">Save AI Settings</button>
-    </div>
+    <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('ai-modal')">Cancel</button><button class="btn btn-primary" onclick="saveAI()">Save</button></div>
   </div>
 </div>
 
@@ -148,130 +77,59 @@
 
 {% block extra_js %}
 <script>
-const TENANT_SLUG = "{{ tenant.slug }}";
-const TENANT_ID = {{ tenant.id }};
+const TENANT_SLUG="{{ tenant.slug }}", TENANT_ID={{ tenant.id }};
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-}
-
-async function loadBots() {
-  const { data } = await api('GET', `/api/admin/tenants/${TENANT_SLUG}/bots`);
-  const tbody = document.getElementById('bots-tbody');
-  if (!Array.isArray(data) || data.length === 0) {
-    tbody.innerHTML = `
-      <tr><td colspan="6">
-        <div class="empty">
-          <div class="empty-icon">🤖</div>
-          <div class="empty-title">No bots yet</div>
-          <div class="empty-desc">Click "Add Bot" above to register a Slack app for this workspace.</div>
-        </div>
-      </td></tr>`;
+async function loadBots(){
+  const tbody=document.getElementById('bots-tbody');
+  renderSkeletonRows(tbody, 6, 4);
+  const {data}=await api('GET',`/api/admin/tenants/${TENANT_SLUG}/bots`);
+  if(!Array.isArray(data)||!data.length){
+    tbody.innerHTML=`<tr><td colspan="6"><div class="empty-state"><div class="empty-state-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/></svg></div><div class="empty-state-title">No bots yet</div><div class="empty-state-desc">Add a Slack app to this workspace to start handling messages.</div><button class="btn btn-primary" onclick="openModal('new-bot-modal')">Add Bot</button></div></td></tr>`;
     return;
   }
-  tbody.innerHTML = data.map(b => {
-    const statusBadge = b.is_active
-      ? '<span class="badge badge-active">Active</span>'
-      : '<span class="badge badge-disabled">Disabled</span>';
-
-    const aiBadge = b.ai_enabled
-      ? '<span class="badge badge-info" style="background:#ede9fe;color:#6d28d9;">✨ AI On</span>'
-      : '<span class="value-empty">Off</span>';
-
-    return `
-      <tr>
-        <td>
-          <div class="bot-name-cell">
-            <div class="bot-icon">🤖</div>
-            <div class="bot-name-text">${escapeHtml(b.name)}</div>
-          </div>
-        </td>
-        <td><code>${escapeHtml(b.slug)}</code></td>
-        <td><code>${escapeHtml(b.slack_app_id)}</code></td>
-        <td>${aiBadge}</td>
-        <td>${statusBadge}</td>
-        <td>
-          <div class="td-actions">
-            <button class="btn btn-sm" onclick='openAI(${b.id}, ${b.ai_enabled}, ${JSON.stringify(b.ai_system_prompt || "")})'>AI</button>
-            <button class="btn btn-sm" onclick="toggleActive(${b.id}, ${!b.is_active})">${b.is_active ? 'Disable' : 'Enable'}</button>
-            <button class="btn btn-danger btn-sm" onclick="deleteBot(${b.id}, '${escapeHtml(b.slug)}')">Delete</button>
-          </div>
-        </td>
-      </tr>`;
+  tbody.innerHTML=data.map(b=>{
+    const st=b.is_active?'<span class="badge badge-active">Active</span>':'<span class="badge badge-disabled">Disabled</span>';
+    const ai=b.ai_enabled?'<span class="badge badge-info" style="background:var(--brand-50);color:var(--brand-700);">AI On</span>':'<span class="value-empty">Off</span>';
+    return `<tr>
+      <td><div class="bot-cell"><div class="bot-ico"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/></svg></div><div class="bot-name-text">${esc(b.name)}</div></div></td>
+      <td><code>${esc(b.slug)}</code></td>
+      <td><code>${esc(b.slack_app_id)}</code></td>
+      <td>${ai}</td>
+      <td>${st}</td>
+      <td><div class="td-actions">
+        <button class="btn btn-sm" onclick='openAI(${b.id},${b.ai_enabled},${JSON.stringify(b.ai_system_prompt||"")})'>AI</button>
+        <button class="btn btn-sm" onclick="toggleB(${b.id},${!b.is_active})">${b.is_active?'Disable':'Enable'}</button>
+        <button class="btn btn-danger btn-sm" onclick="delB(${b.id},'${esc(b.slug)}')">Delete</button>
+      </div></td>
+    </tr>`;
   }).join('');
 }
 
-async function createBot() {
-  const body = {
-    slug: document.getElementById('b-slug').value.trim(),
-    name: document.getElementById('b-name').value.trim(),
-    bot_token: document.getElementById('b-token').value.trim(),
-    signing_secret: document.getElementById('b-signing').value.trim(),
-    slack_app_id: document.getElementById('b-app-id').value.trim(),
-    slack_bot_user_id: document.getElementById('b-user-id').value.trim(),
-  };
-  if (Object.values(body).some(v => !v)) {
-    toast('All fields are required', 'error');
-    return;
-  }
-  const { ok, data } = await api('POST', `/api/admin/tenants/${TENANT_ID}/bots`, body);
-  if (ok) {
-    toast('Bot added', 'success');
-    closeModal('new-bot-modal');
-    ['b-slug','b-name','b-token','b-signing','b-app-id','b-user-id'].forEach(id =>
-      document.getElementById(id).value = ''
-    );
-    await loadBots();
-  } else {
-    toast((data && data.detail) || 'Failed to add bot', 'error');
-  }
+async function createBot(){
+  const body={slug:document.getElementById('b-slug').value.trim(),name:document.getElementById('b-name').value.trim(),bot_token:document.getElementById('b-token').value.trim(),signing_secret:document.getElementById('b-signing').value.trim(),slack_app_id:document.getElementById('b-app-id').value.trim(),slack_bot_user_id:document.getElementById('b-user-id').value.trim()};
+  if(Object.values(body).some(v=>!v)){toast('All fields required','error');return;}
+  const {ok,data}=await api('POST',`/api/admin/tenants/${TENANT_ID}/bots`,body);
+  if(ok){toast('Bot added','success');closeModal('new-bot-modal');['b-slug','b-name','b-token','b-signing','b-app-id','b-user-id'].forEach(i=>document.getElementById(i).value='');loadBots();}
+  else toast((data&&data.detail)||'Failed','error');
 }
 
-async function toggleActive(id, newActive) {
-  const { ok } = await api('PATCH', `/api/admin/bots/${id}`, { is_active: newActive });
-  if (ok) {
-    toast(newActive ? 'Bot enabled' : 'Bot disabled', 'success');
-    await loadBots();
-  } else {
-    toast('Failed to update', 'error');
-  }
+async function toggleB(id,a){const {ok}=await api('PATCH',`/api/admin/bots/${id}`,{is_active:a});if(ok){toast(a?'Enabled':'Disabled','success');loadBots();}else toast('Failed','error');}
+
+async function delB(id,slug){
+  const ok = await confirmAction(
+    `Delete bot "${slug}"? This cannot be undone.`,
+    { title: 'Delete bot?', confirmText: 'Delete', danger: true }
+  );
+  if(!ok) return;
+  const {ok:success}=await api('DELETE',`/api/admin/bots/${id}`);
+  if(success){toast('Bot deleted','success');loadBots();}else toast('Failed to delete','error');
 }
 
-async function deleteBot(id, slug) {
-  if (!confirm(`Delete bot "${slug}"? This cannot be undone.`)) return;
-  const { ok } = await api('DELETE', `/api/admin/bots/${id}`);
-  if (ok) {
-    toast('Bot deleted', 'success');
-    await loadBots();
-  } else {
-    toast('Failed to delete', 'error');
-  }
-}
+let aiBot=null;
+function openAI(id,en,pr){aiBot=id;document.getElementById('ai-enabled').checked=!!en;document.getElementById('ai-prompt').value=pr||'';openModal('ai-modal');}
+async function saveAI(){const body={ai_enabled:document.getElementById('ai-enabled').checked,ai_system_prompt:document.getElementById('ai-prompt').value.trim()};const {ok}=await api('PATCH',`/api/admin/bots/${aiBot}/ai`,body);if(ok){toast('AI settings saved','success');closeModal('ai-modal');loadBots();}else toast('Failed','error');}
 
 loadBots();
-
-let aiCurrentBotId = null;
-
-function openAI(botId, enabled, prompt) {
-  aiCurrentBotId = botId;
-  document.getElementById('ai-enabled').checked = !!enabled;
-  document.getElementById('ai-prompt').value = prompt || '';
-  openModal('ai-modal');
-}
-
-async function saveAI() {
-  const body = {
-    ai_enabled: document.getElementById('ai-enabled').checked,
-    ai_system_prompt: document.getElementById('ai-prompt').value.trim(),
-  };
-  const { ok } = await api('PATCH', `/api/admin/bots/${aiCurrentBotId}/ai`, body);
-  if (ok) {
-    toast('AI settings saved', 'success');
-    closeModal('ai-modal');
-    await loadBots();
-  } else {
-    toast('Failed to save', 'error');
-  }
-}
 </script>
 {% endblock %}

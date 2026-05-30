@@ -1,166 +1,34 @@
-/* Compose page */
-
-.compose-context-bar {
-  background: white;
-  border: 1px solid var(--slate-200);
-  border-radius: var(--rad-lg);
-  padding: var(--sp-4) var(--sp-5);
-  display: flex;
-  align-items: center;
-  gap: var(--sp-4);
-  margin-bottom: var(--sp-6);
-  box-shadow: var(--shadow-sm);
-}
-
-.compose-context-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: var(--rad);
-  background: linear-gradient(135deg, var(--indigo-500), var(--indigo-700));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  flex-shrink: 0;
-}
-
-.compose-context-icon svg { width: 20px; height: 20px; }
-
-.compose-context-info { flex: 1; min-width: 0; }
-
-.compose-context-title {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--slate-900);
-}
-
-.compose-context-meta {
-  font-size: 12px;
-  color: var(--slate-500);
-  margin-top: 2px;
-}
-
-/* Tabs — bigger style than Users page */
-.compose-tabs {
-  display: flex;
-  gap: var(--sp-1);
-  background: var(--slate-100);
-  border-radius: var(--rad);
-  padding: 4px;
+/* Compose — Sohan (sharp tabs) */
+.ctx-bar {
+  background: var(--n-0); border: 1px solid var(--n-40); border-radius: var(--rad-lg);
+  padding: var(--sp-3) var(--sp-5); display: flex; align-items: center; gap: var(--sp-3);
   margin-bottom: var(--sp-5);
-  width: fit-content;
 }
-
-.compose-tab {
-  background: transparent;
-  border: 0;
-  padding: 9px 18px;
-  border-radius: var(--rad-sm);
-  font-size: 13.5px;
-  font-weight: 500;
-  color: var(--slate-600);
-  cursor: pointer;
-  transition: var(--transition);
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
+.ctx-ico {
+  width: 34px; height: 34px; border-radius: var(--rad-sm);
+  background: var(--brand-500); color: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
+.ctx-ico .ico { width: 18px; height: 18px; }
+.ctx-title { font-size: 14px; font-weight: 600; color: var(--n-100); }
+.ctx-meta { font-size: 12px; color: var(--n-70); margin-top: 1px; }
 
-.compose-tab:hover { color: var(--slate-900); }
+/* Tabs — sharp underline */
+.tabs { display: flex; border-bottom: 1px solid var(--n-40); margin-bottom: var(--sp-5); }
+.tab { background: transparent; border: 0; border-bottom: 2px solid transparent; padding: 10px 18px; font-size: 13.5px; font-weight: 600; color: var(--n-70); display: inline-flex; align-items: center; gap: 7px; margin-bottom: -1px; }
+.tab:hover { color: var(--n-100); }
+.tab.active { color: var(--brand-600); border-bottom-color: var(--brand-500); }
+.tab .ico { width: 16px; height: 16px; }
+.panel { display: none; } .panel.active { display: block; }
 
-.compose-tab.active {
-  background: white;
-  color: var(--indigo-600);
-  font-weight: 600;
-  box-shadow: var(--shadow-sm);
-}
-
-.compose-tab-icon {
-  width: 16px;
-  height: 16px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.tab-panel { display: none; }
-.tab-panel.active { display: block; animation: tabIn 200ms ease; }
-
-@keyframes tabIn {
-  from { opacity: 0; transform: translateY(4px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-/* Form layout inside compose */
-.compose-form {
-  display: grid;
-  gap: var(--sp-4);
-}
-
-.field-row-2 {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--sp-3);
-}
-
-@media (max-width: 600px) {
-  .field-row-2 { grid-template-columns: 1fr; }
-}
-
-.send-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: var(--sp-3);
-  padding-top: var(--sp-4);
-  border-top: 1px solid var(--slate-100);
-  gap: var(--sp-3);
-}
-
-.send-bar-hint {
-  font-size: 12px;
-  color: var(--slate-500);
-}
-
-/* Severity dropdown — make options visually meaningful */
-.severity-pills {
-  display: flex;
-  gap: var(--sp-2);
-  flex-wrap: wrap;
-}
-
-.severity-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 14px;
-  border: 2px solid var(--slate-200);
-  border-radius: var(--rad);
-  cursor: pointer;
-  transition: var(--transition);
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--slate-700);
-  background: white;
-  user-select: none;
-}
-
-.severity-pill:hover { border-color: var(--slate-300); }
-
-.severity-pill input { display: none; }
-
-.severity-pill.selected {
-  border-color: var(--indigo-500);
-  background: var(--indigo-50);
-  color: var(--indigo-700);
-}
-
-.severity-pill .dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-}
-
-.severity-pill.info-pill .dot { background: var(--indigo-500); }
-.severity-pill.warning-pill .dot { background: var(--amber-500); }
-.severity-pill.critical-pill .dot { background: var(--red-500); }
+.f2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); }
+.sev { display: flex; gap: var(--sp-2); flex-wrap: wrap; }
+.sev-pill { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border: 1px solid var(--n-50); border-radius: var(--rad); cursor: pointer; font-size: 13px; font-weight: 600; color: var(--n-80); background: var(--n-0); }
+.sev-pill input { display: none; }
+.sev-pill .dot { width: 8px; height: 8px; border-radius: 50%; }
+.sev-pill.info .dot { background: var(--brand-500); }
+.sev-pill.warning .dot { background: var(--amber-600); }
+.sev-pill.critical .dot { background: var(--red-500); }
+.sev-pill.sel { border-color: var(--brand-500); background: var(--brand-50); color: var(--brand-700); }
+.send-bar { display: flex; align-items: center; justify-content: space-between; margin-top: var(--sp-3); padding-top: var(--sp-4); border-top: 1px solid var(--n-30); gap: var(--sp-3); }
+.send-hint { font-size: 12px; color: var(--n-70); }
+@media (max-width:600px){.f2{grid-template-columns:1fr}}

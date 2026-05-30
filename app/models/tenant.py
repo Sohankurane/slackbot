@@ -2,9 +2,9 @@
 
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-
+from sqlalchemy import Boolean, String, false
 from app.models.base import Base, TimestampMixin
-
+from app.models.bot import Bot 
 
 class Tenant(Base, TimestampMixin):
     __tablename__ = "tenants"
@@ -23,7 +23,11 @@ class Tenant(Base, TimestampMixin):
     )
 
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
-
+    
+    access_control_enabled: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default=false(), nullable=False
+    )
+    
     # Children
     bots: Mapped[list["Bot"]] = relationship(  # noqa: F821
         back_populates="tenant", cascade="all, delete-orphan"

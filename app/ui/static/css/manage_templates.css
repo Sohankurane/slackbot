@@ -1,134 +1,28 @@
-/* Manage App Templates page */
-
-.template-card {
-  background: white;
-  border: 1px solid var(--slate-200);
-  border-radius: var(--rad-lg);
-  overflow: hidden;
-  box-shadow: var(--shadow-sm);
-  margin-bottom: var(--sp-4);
-  transition: var(--transition);
+/* Templates — Sohan (compact, sharp) */
+.tpl {
+  background: var(--n-0); border: 1px solid var(--n-40); border-radius: var(--rad-lg);
+  box-shadow: var(--shadow-sm); margin-bottom: var(--sp-4); overflow: hidden;
 }
-
-.template-card:hover {
-  border-color: var(--slate-300);
-  box-shadow: var(--shadow-md);
+.tpl-head {
+  padding: var(--sp-4) var(--sp-5); display: flex; align-items: center; gap: var(--sp-3);
+  border-bottom: 1px solid var(--n-30);
 }
-
-.template-header {
-  padding: var(--sp-5) var(--sp-6);
-  display: flex;
-  align-items: center;
-  gap: var(--sp-4);
-  border-bottom: 1px solid var(--slate-100);
-  background: linear-gradient(to right, var(--slate-50), white);
+.tpl-ico {
+  width: 38px; height: 38px; border-radius: var(--rad-sm);
+  background: var(--brand-500); color: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
+.tpl-ico .ico { width: 20px; height: 20px; }
+.tpl-name { font-size: 14px; font-weight: 600; color: var(--n-100); }
+.tpl-slug { font-size: 12px; color: var(--n-70); margin-top: 1px; }
+.tpl-body { padding: var(--sp-4) var(--sp-5); display: grid; gap: var(--sp-4); }
+.tpl-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .4px; color: var(--n-70); margin-bottom: var(--sp-2); display: block; }
 
-.template-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: var(--rad-md);
-  background: linear-gradient(135deg, var(--indigo-500), var(--indigo-700));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  flex-shrink: 0;
-}
+.url-bar { display: flex; align-items: center; gap: var(--sp-2); background: var(--n-100); border-radius: var(--rad); padding: 4px 4px 4px var(--sp-4); }
+.url-text { flex: 1; font-family: var(--font-mono); font-size: 12.5px; color: #4ec9b0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 8px 0; }
+.copy-btn { background: var(--n-80); border: 0; color: #fff; padding: 8px 14px; border-radius: var(--rad-sm); font-size: 12.5px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; transition: var(--transition); flex-shrink: 0; }
+.copy-btn:hover { background: var(--brand-500); }
+.copy-btn.copied { background: var(--green-600); }
+.copy-btn .ico { width: 14px; height: 14px; }
 
-.template-icon svg { width: 22px; height: 22px; }
-
-.template-meta {
-  flex: 1;
-  min-width: 0;
-}
-
-.template-name {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--slate-900);
-}
-
-.template-sub {
-  font-size: 12px;
-  color: var(--slate-500);
-  margin-top: 2px;
-}
-
-.template-status .badge {
-  flex-shrink: 0;
-}
-
-.template-body {
-  padding: var(--sp-5) var(--sp-6);
-  display: grid;
-  gap: var(--sp-5);
-}
-
-.template-block-label {
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: var(--slate-500);
-  margin-bottom: var(--sp-2);
-  display: block;
-}
-
-/* Install URL row */
-.install-url-row {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-2);
-  background: var(--slate-900);
-  border-radius: var(--rad);
-  padding: 4px 4px 4px var(--sp-4);
-}
-
-.install-url-text {
-  flex: 1;
-  font-family: var(--font-mono);
-  font-size: 12.5px;
-  color: var(--green-500);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  padding: 8px 0;
-}
-
-.copy-btn {
-  background: var(--slate-700);
-  border: 0;
-  color: white;
-  padding: 8px 14px;
-  border-radius: var(--rad-sm);
-  font-size: 12.5px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: var(--transition);
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
-}
-
-.copy-btn:hover { background: var(--indigo-600); }
-.copy-btn.copied { background: var(--green-500); }
-.copy-btn svg { width: 14px; height: 14px; }
-
-/* Scopes pills */
-.scopes-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.scope-pill {
-  background: var(--slate-100);
-  color: var(--slate-700);
-  font-family: var(--font-mono);
-  font-size: 11.5px;
-  padding: 3px 9px;
-  border-radius: var(--rad-sm);
-  border: 1px solid var(--slate-200);
-}
+.scopes { display: flex; flex-wrap: wrap; gap: 6px; }
+.scope { background: var(--n-10); border: 1px solid var(--n-40); color: var(--n-80); font-family: var(--font-mono); font-size: 11.5px; padding: 3px 9px; border-radius: var(--rad-sm); }

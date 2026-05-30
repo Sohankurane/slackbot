@@ -8,6 +8,21 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
 from app.models import AIConversationTurn, Bot
+import re
+
+def _markdown_to_slack(text: str) -> str:
+    """Convert standard markdown to Slack's mrkdwn format."""
+    # **bold** → *bold*
+    text = re.sub(r"\*\*([^*]+)\*\*", r"*\1*", text)
+    # __bold__ → *bold*
+    text = re.sub(r"__([^_]+)__", r"*\1*", text)
+    # ### Headings → *Heading*
+    text = re.sub(r"^#{1,6}\s+(.+)$", r"*\1*", text, flags=re.MULTILINE)
+    # [text](url) → <url|text>  (Slack link syntax)
+    text = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", r"<\2|\1>", text)
+    # Bullet lists: "- item" stays as "- item" (Slack handles this fine)
+    # Numbered lists also work as-is
+    return text
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +31,10 @@ _client: AsyncGroq | None = None
 DEFAULT_SYSTEM_PROMPT = (
     "You are a helpful Slack assistant bot. Keep replies concise and friendly, "
     "usually 1-3 sentences. You're chatting inside Slack, so avoid long essays. "
-    "If you don't know something, say so briefly."
+    "If you don't know something, say so briefly. "
+    "Do NOT use markdown formatting like **bold**, _italic_, or `code`. "
+    "If you need emphasis, use Slack's syntax: *bold* with single asterisks, "
+    "_italic_ with underscores, `code` with backticks. Plain text is usually best."
 )
 
 MAX_USER_MESSAGE_CHARS = 2000
@@ -30,6 +48,7 @@ def _get_client() -> AsyncGroq | None:
     if _client is None:
         _client = AsyncGroq(api_key=settings.groq_api_key)
     return _client
+
 
 
 async def _fetch_recent_turns(
@@ -144,6 +163,7 @@ async def generate_ai_reply(
             timeout=10.0,
         )
         reply = completion.choices[0].message.content.strip()
+        reply = _markdown_to_slack(reply)
     except Exception:
         logger.exception("Groq AI call failed")
         return None

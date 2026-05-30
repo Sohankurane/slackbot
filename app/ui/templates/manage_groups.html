@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+{% block title %}Groups — {{ tenant.name }}{% endblock %}
+
+{% block extra_css %}<link rel="stylesheet" href="/static/css/manage_groups.css">{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">User Groups</h1>
+    <p class="page-subtitle">Named groups for targeted messaging and bot access control</p>
+  </div>
+  <div class="page-actions">
+    <a class="btn btn-secondary" href="/admin/manage">All tenants</a>
+    <a class="btn btn-secondary" href="/admin/manage/{{ tenant.slug }}/users">Users</a>
+    <button class="btn btn-primary" onclick="openModal('new-group-modal')">
+      <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>
+      New Group
+    </button>
+  </div>
+</div>
+
+<div class="ctx-bar">
+  <div class="ctx-logo">{{ tenant.name[0]|upper }}</div>
+  <div><div class="ctx-name">{{ tenant.name }}</div><div class="ctx-meta">Slug <code>{{ tenant.slug }}</code></div></div>
+</div>
+
+<div class="card ac-card">
+  <div class="card-body ac-body">
+    <div>
+      <div class="ac-title">Bot Access Control</div>
+      <div class="ac-desc">When ON, only members of bot-enabled groups can use the bot. Everyone else gets a "not authorized" reply.</div>
+    </div>
+    <label class="switch">
+      <input type="checkbox" id="ac-toggle" onchange="toggleAccessControl()">
+      <span class="switch-track"><span class="switch-thumb"></span></span>
+      <span id="ac-label" class="switch-label">Off</span>
+    </label>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><div><div class="card-title">All Groups</div><div class="card-subtitle">Groups with bot access let their members use the bot when access control is on.</div></div></div>
+  <div class="card-body no-pad">
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Group</th><th>Members</th><th>Bot Access</th><th style="text-align:right;">Actions</th></tr></thead>
+        <tbody id="groups-tbody"><tr><td colspan="4" style="text-align:center;padding:40px;color:#94a3b8;">Loading…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- New Group Modal -->
+<div class="modal-backdrop" id="new-group-modal">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header"><div class="modal-title">Create Group</div><button class="modal-close" onclick="closeModal('new-group-modal')">&times;</button></div>
+    <div class="modal-body">
+      <div class="field"><label>Group Name <small>(e.g. Engineering, HR)</small></label><input type="text" id="g-name" placeholder="Engineering"></div>
+      <div class="field"><label style="display:flex;align-items:center;gap:10px;cursor:pointer;"><input type="checkbox" id="g-canuse" checked style="width:auto;"><span>Members can use the bot</span></label></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('new-group-modal')">Cancel</button><button class="btn btn-primary" onclick="createGroup()">Create</button></div>
+  </div>
+</div>
+
+<!-- Members Modal -->
+<div class="modal-backdrop" id="members-modal">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:560px;">
+    <div class="modal-header"><div class="modal-title" id="members-title">Group Members</div><button class="modal-close" onclick="closeModal('members-modal')">&times;</button></div>
+    <div class="modal-body">
+      <div class="field">
+        <label>Add member</label>
+        <select id="member-picker"><option value="">Select a user…</option></select>
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="addMember()" style="margin-bottom:16px;">Add to group</button>
+      <div id="members-list"></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-primary" onclick="closeModal('members-modal')">Done</button></div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const TENANT_ID={{ tenant.id }};
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+let allUsers=[], curGroup=null, curMembers=[];
+
+async function loadAccessControl(){
+  const {data}=await api('GET','/api/admin/tenants');
+  const t=Array.isArray(data)?data.find(x=>x.id===TENANT_ID):null;
+  const on=t&&t.access_control_enabled;
+  document.getElementById('ac-toggle').checked=!!on;
+  document.getElementById('ac-label').textContent=on?'On':'Off';
+}
+
+async function toggleAccessControl(){
+  const on=document.getElementById('ac-toggle').checked;
+  const {ok}=await api('PATCH',`/api/admin/tenants/${TENANT_ID}`,{access_control_enabled:on});
+  if(ok){
+    document.getElementById('ac-label').textContent=on?'On':'Off';
+    toast(on?'Access control enabled':'Access control disabled','success');
+  }else{
+    toast('Failed','error');
+    document.getElementById('ac-toggle').checked=!on;
+  }
+}
+
+async function loadGroups(){
+  const tbody=document.getElementById('groups-tbody');
+  renderSkeletonRows(tbody, 4, 3);
+  const {data}=await api('GET',`/api/admin/tenants/${TENANT_ID}/groups`);
+  if(!Array.isArray(data)||!data.length){
+    tbody.innerHTML=`<tr><td colspan="4"><div class="empty-state"><div class="empty-state-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/></svg></div><div class="empty-state-title">No groups yet</div><div class="empty-state-desc">Create a group to organize users and control bot access.</div><button class="btn btn-primary" onclick="openModal('new-group-modal')">New Group</button></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML=data.map(g=>{
+    const access=g.can_use_bot?'<span class="badge badge-active">Allowed</span>':'<span class="badge badge-disabled">Blocked</span>';
+    return `<tr>
+      <td><strong>${esc(g.name)}</strong></td>
+      <td>${g.member_count} member${g.member_count===1?'':'s'}</td>
+      <td>${access}</td>
+      <td><div class="td-actions">
+        <button class="btn btn-sm" onclick="openMembers(${g.id},'${esc(g.name)}')">Members</button>
+        <button class="btn btn-sm" onclick="toggleAccess(${g.id},${!g.can_use_bot})">${g.can_use_bot?'Block':'Allow'} bot</button>
+        <button class="btn btn-danger btn-sm" onclick="delGroup(${g.id},'${esc(g.name)}')">Delete</button>
+      </div></td>
+    </tr>`;
+  }).join('');
+}
+
+async function createGroup(){
+  const name=document.getElementById('g-name').value.trim();
+  const can_use_bot=document.getElementById('g-canuse').checked;
+  if(!name){toast('Group name required','error');return;}
+  const {ok,data}=await api('POST',`/api/admin/tenants/${TENANT_ID}/groups`,{name,can_use_bot});
+  if(ok){toast('Group created','success');closeModal('new-group-modal');document.getElementById('g-name').value='';loadGroups();}
+  else toast((data&&data.detail)||'Failed','error');
+}
+
+async function toggleAccess(id,v){const {ok}=await api('PATCH',`/api/admin/groups/${id}`,{can_use_bot:v});if(ok){toast('Updated','success');loadGroups();}else toast('Failed','error');}
+
+async function delGroup(id,name){
+  const ok=await confirmAction(`Delete group "${name}"? Members are removed from the group but their accounts stay.`,{title:'Delete group?',confirmText:'Delete',danger:true});
+  if(!ok)return;
+  const {ok:s}=await api('DELETE',`/api/admin/groups/${id}`);
+  if(s){toast('Group deleted','success');loadGroups();}else toast('Failed','error');
+}
+
+async function openMembers(id,name){
+  curGroup=id;
+  document.getElementById('members-title').textContent='Members — '+name;
+  if(!allUsers.length){
+    const {data}=await api('GET',`/api/admin/tenants/${TENANT_ID}/users?status=active`);
+    allUsers=Array.isArray(data)?data:[];
+  }
+  await refreshMembers();
+  openModal('members-modal');
+}
+
+async function refreshMembers(){
+  const {data}=await api('GET',`/api/admin/groups/${curGroup}/members`);
+  curMembers=Array.isArray(data)?data:[];
+  const picker=document.getElementById('member-picker');
+  const available=allUsers.filter(u=>!curMembers.includes(u.slack_user_id));
+  picker.innerHTML='<option value="">Select a user…</option>'+available.map(u=>`<option value="${esc(u.slack_user_id)}">${esc(u.display_name||u.real_name||u.slack_user_id)}</option>`).join('');
+  const list=document.getElementById('members-list');
+  if(!curMembers.length){list.innerHTML='<p class="members-empty">No members yet.</p>'; return;}
+  list.innerHTML=curMembers.map(sid=>{
+    const u=allUsers.find(x=>x.slack_user_id===sid);
+    const label=u?(u.display_name||u.real_name||sid):sid;
+    return `<div class="member-row"><span class="member-name">${esc(label)}</span><button class="btn btn-danger btn-sm" onclick="rmMember('${esc(sid)}')">Remove</button></div>`;
+  }).join('');
+}
+
+async function addMember(){
+  const sid=document.getElementById('member-picker').value;
+  if(!sid){toast('Pick a user','error');return;}
+  const {ok}=await api('POST',`/api/admin/groups/${curGroup}/members`,{slack_user_id:sid});
+  if(ok){toast('Member added','success');refreshMembers();loadGroups();}else toast('Failed','error');
+}
+
+async function rmMember(sid){
+  const {ok}=await api('DELETE',`/api/admin/groups/${curGroup}/members/${encodeURIComponent(sid)}`);
+  if(ok){toast('Member removed','success');refreshMembers();loadGroups();}else toast('Failed','error');
+}
+
+loadAccessControl();
+loadGroups();
+</script>
+{% endblock %}

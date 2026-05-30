@@ -7,6 +7,7 @@ from app.models.admin_user import AdminUser
 from app.models.slack_app_template import SlackAppTemplate
 from app.models.slack_oauth_state import SlackOAuthState
 from app.models.ai_turn import AIConversationTurn
+from app.models.group import Group, GroupMember
 
 __all__ = [
     "Base",
@@ -19,4 +20,5 @@ __all__ = [
     "SlackAppTemplate",
     "SlackOAuthState",
     "AIConversationTurn",
+    "Group", "GroupMember",
 ]

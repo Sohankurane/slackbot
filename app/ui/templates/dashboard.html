@@ -1,28 +1,14 @@
 {% extends "base.html" %}
 {% block title %}Dashboard — Slackbot Admin{% endblock %}
-{% block header_title %}Dashboard{% endblock %}
 
-{% block extra_css %}
-<link rel="stylesheet" href="/static/css/dashboard.css">
-{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="/static/css/dashboard.css">{% endblock %}
 
 {% block content %}
 
-{% set total_tenants = tenant_data|length %}
-{% set total_bots = tenant_data|sum(attribute='bots')|length if false else 0 %}
-{% set active_bots = namespace(count=0) %}
-{% set total_bot_count = namespace(count=0) %}
-{% for item in tenant_data %}
-  {% for b in item.bots %}
-    {% set total_bot_count.count = total_bot_count.count + 1 %}
-    {% if b.is_active %}{% set active_bots.count = active_bots.count + 1 %}{% endif %}
-  {% endfor %}
-{% endfor %}
-
 <div class="page-header">
   <div>
-    <h1 class="page-title">Welcome back 👋</h1>
-    <p class="page-subtitle">Overview of your Slack bot platform.</p>
+    <h1 class="page-title">Dashboard</h1>
+    <p class="page-subtitle">Platform overview</p>
   </div>
   <div class="page-actions">
     <a href="/admin/manage" class="btn btn-secondary">Manage tenants</a>
@@ -30,83 +16,211 @@
   </div>
 </div>
 
-<!-- Stats -->
-<div class="stats-grid">
-  <div class="stat-card">
-    <div class="stat-content">
+<div class="stats-row">
+  <div class="stat">
+    <div class="stat-ico"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-3"/></svg></div>
+    <div class="stat-body">
       <div class="stat-label">Workspaces</div>
-      <div class="stat-value">{{ total_tenants }}</div>
-      <div class="stat-meta">Active Slack tenants</div>
+      <div class="stat-value">{{ metrics.active_tenants }}</div>
+      <div class="stat-meta">{{ metrics.active_bots }} active bots · {{ metrics.ai_enabled_bots }} AI-enabled</div>
     </div>
   </div>
-  <div class="stat-card">
-    <div class="stat-content">
-      <div class="stat-label">Bots</div>
-      <div class="stat-value">{{ total_bot_count.count }}</div>
-      <div class="stat-meta">{{ active_bots.count }} active</div>
+  <div class="stat">
+    <div class="stat-ico green"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+    <div class="stat-body">
+      <div class="stat-label">Total Messages</div>
+      <div class="stat-value">{{ metrics.total_messages }}</div>
+      <div class="stat-meta">+{{ metrics.messages_today }} today</div>
     </div>
   </div>
-  <div class="stat-card">
-    <div class="stat-content">
-      <div class="stat-label">Runtime</div>
-      <div class="stat-value">Live</div>
-      <div class="stat-meta">FastAPI · PostgreSQL · Async</div>
+  <div class="stat">
+    <div class="stat-ico amber"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div>
+    <div class="stat-body">
+      <div class="stat-label">AI Replies</div>
+      <div class="stat-value">{{ metrics.ai_replies_total }}</div>
+      <div class="stat-meta">{{ metrics.ai_replies_week }} this week</div>
     </div>
   </div>
-  <div class="stat-card">
-    <div class="stat-content">
-      <div class="stat-label">Auth</div>
-      <div class="stat-value">Secure</div>
-      <div class="stat-meta">bcrypt · session cookies</div>
+  <div class="stat">
+    <div class="stat-ico red"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+    <div class="stat-body">
+      <div class="stat-label">Active Users</div>
+      <div class="stat-value">{{ metrics.active_users }}</div>
+      <div class="stat-meta">Across all workspaces</div>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="card chart-card">
+  <div class="card-header">
+    <div class="chart-header" style="width:100%;">
+      <div>
+        <div class="card-title">Message Activity</div>
+        <div class="card-subtitle">Inbound vs outbound, last 14 days</div>
+      </div>
+      <div class="chart-legend">
+        <span class="legend-item"><span class="legend-dot inbound"></span> Inbound</span>
+        <span class="legend-item"><span class="legend-dot outbound"></span> Outbound</span>
+      </div>
+    </div>
+  </div>
+  <div class="card-body">
+    <div class="chart-wrap">
+      <canvas id="activityChart"></canvas>
     </div>
   </div>
 </div>
 
-<!-- Tenant overview -->
-<div class="page-header" style="margin-bottom: var(--sp-4);">
-  <div>
-    <h2 class="page-title" style="font-size: 18px;">Workspaces</h2>
+<div class="ws-panel">
+  <div class="ws-panel-head">
+    <div>
+      <div class="ws-panel-title">Workspaces</div>
+      <div class="ws-panel-sub">Registered Slack tenants and their bots</div>
+    </div>
+    <div class="ws-search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      <input type="text" id="wsSearch" placeholder="Search workspaces…" onkeyup="filterWs()">
+    </div>
   </div>
-</div>
 
-{% if tenant_data %}
-<div class="tenant-grid">
-  {% for item in tenant_data %}
-  <div class="tenant-card">
-    <div class="tenant-card-header">
-      <div class="tenant-logo">{{ item.tenant.name[0]|upper }}</div>
-      <div class="tenant-info">
-        <div class="tenant-name">{{ item.tenant.name }}</div>
-        <div class="tenant-meta">
-          <code>{{ item.tenant.slug }}</code> &middot;
-          Team ID <code>{{ item.tenant.slack_team_id }}</code>
+  {% if tenant_data %}
+  {% set pal = ['#4f46e5','#0891b2','#0d9488','#16a34a','#ca8a04','#db2777','#7c3aed','#dc2626'] %}
+  <div class="ws-grid" id="wsGrid">
+    {% for item in tenant_data %}
+    <div class="ws-item" data-name="{{ item.tenant.name|lower }} {{ item.tenant.slug|lower }}">
+      <div class="ws-badge" style="background: {{ pal[loop.index0 % 8] }};">{{ item.tenant.name[0]|upper }}</div>
+      <div>
+        <div class="ws-main-name">{{ item.tenant.name }}</div>
+        <div class="ws-main-meta">{{ item.tenant.slug }} · {{ item.tenant.slack_team_id }}</div>
+        <div class="ws-chips-row">
+          {% if item.bots %}{% for bot in item.bots %}
+            <span class="ws-chip2 {% if not bot.is_active %}off{% endif %}"><span class="d"></span>{{ bot.name }}</span>
+          {% endfor %}{% else %}
+            <span class="ws-chip2 off"><span class="d"></span>No bots</span>
+          {% endif %}
         </div>
       </div>
-      <a href="/admin/manage/{{ item.tenant.slug }}" class="btn btn-secondary btn-sm">View bots →</a>
+      <div class="ws-stats">
+        <div class="ws-stat">
+          <span class="ws-stat-num">{{ item.active_bots }}</span>
+          <span class="ws-stat-lbl">Bots</span>
+        </div>
+        <div class="ws-stat">
+          <span class="ws-stat-num">{{ item.message_count }}</span>
+          <span class="ws-stat-lbl">Messages</span>
+        </div>
+        <div class="ws-stat">
+          <span class="ws-stat-num">{% if item.last_active %}{{ item.last_active.strftime('%d %b') }}{% else %}—{% endif %}</span>
+          <span class="ws-stat-lbl">Last active</span>
+        </div>
+      </div>
+      <a href="/admin/manage/{{ item.tenant.slug }}" class="ws-view">View</a>
     </div>
-    <div class="tenant-bots">
-      {% if item.bots %}
-        {% for bot in item.bots %}
-          <span class="bot-chip {% if not bot.is_active %}inactive{% endif %}">
-            <span class="bot-chip-dot"></span>
-            {{ bot.name }}
-          </span>
-        {% endfor %}
-      {% else %}
-        <span class="bot-chip inactive"><span class="bot-chip-dot"></span> No bots yet</span>
-      {% endif %}
-    </div>
+    {% endfor %}
   </div>
-  {% endfor %}
-</div>
-{% else %}
-<div class="card">
-  <div class="empty">
-    <div class="empty-title">No workspaces yet</div>
-    <div class="empty-desc">Register your first Slack workspace to start receiving messages from your bots.</div>
-    <a href="/admin/manage" class="btn btn-primary">Register a workspace</a>
+  {% else %}
+  <div style="text-align:center;padding:56px 20px;color:#64748b;">
+    <div style="font-size:15px;font-weight:600;color:#334155;margin-bottom:6px;">No workspaces yet</div>
+    <div style="margin-bottom:18px;">Register your first Slack workspace to begin.</div>
+    <a href="/admin/manage" class="btn btn-primary">Register workspace</a>
   </div>
+  {% endif %}
 </div>
-{% endif %}
+
+<script>
+function filterWs() {
+  const q = document.getElementById('wsSearch').value.toLowerCase().trim();
+  document.querySelectorAll('#wsGrid .ws-item').forEach(row => {
+    const name = row.getAttribute('data-name') || '';
+    row.classList.toggle('hidden', q && !name.includes(q));
+  });
+}
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+(function () {
+  const series = {{ metrics.series | tojson }};
+  const labels = series.map(d => d.date);
+  const inbound = series.map(d => d.inbound);
+  const outbound = series.map(d => d.outbound);
+
+  const ctx = document.getElementById('activityChart');
+  if (!ctx || typeof Chart === 'undefined') return;
+
+  // Gradient fills
+  const c = ctx.getContext('2d');
+  const inboundGrad = c.createLinearGradient(0, 0, 0, 280);
+  inboundGrad.addColorStop(0, 'rgba(99, 102, 241, 0.25)');
+  inboundGrad.addColorStop(1, 'rgba(99, 102, 241, 0.0)');
+  const outboundGrad = c.createLinearGradient(0, 0, 0, 280);
+  outboundGrad.addColorStop(0, 'rgba(34, 197, 94, 0.25)');
+  outboundGrad.addColorStop(1, 'rgba(34, 197, 94, 0.0)');
+
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Inbound',
+          data: inbound,
+          borderColor: '#6366f1',
+          backgroundColor: inboundGrad,
+          borderWidth: 2,
+          fill: true,
+          tension: 0.35,
+          pointRadius: 0,
+          pointHoverRadius: 5,
+          pointHoverBackgroundColor: '#6366f1',
+        },
+        {
+          label: 'Outbound',
+          data: outbound,
+          borderColor: '#22c55e',
+          backgroundColor: outboundGrad,
+          borderWidth: 2,
+          fill: true,
+          tension: 0.35,
+          pointRadius: 0,
+          pointHoverRadius: 5,
+          pointHoverBackgroundColor: '#22c55e',
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#0f172a',
+          titleColor: '#f1f5f9',
+          bodyColor: '#cbd5e1',
+          padding: 12,
+          cornerRadius: 8,
+          displayColors: true,
+          borderColor: '#334155',
+          borderWidth: 1,
+        },
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { color: '#94a3b8', font: { size: 11 }, maxRotation: 0 },
+        },
+        y: {
+          beginAtZero: true,
+          grid: { color: '#f1f5f9' },
+          ticks: { color: '#94a3b8', font: { size: 11 }, precision: 0 },
+          border: { display: false },
+        },
+      },
+    },
+  });
+})();
+</script>
 
 {% endblock %}

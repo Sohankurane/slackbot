@@ -11,92 +11,129 @@
 <div class="page-header">
   <div>
     <h1 class="page-title">User History</h1>
-    <p class="page-subtitle">Every message exchanged with bots in this workspace.</p>
+    <p class="page-subtitle">Every message exchanged with bots in this workspace</p>
   </div>
   <div class="page-actions">
-    <a class="btn btn-secondary" href="/admin/manage">← All tenants</a>
+    <a class="btn btn-secondary" href="/admin/manage">All tenants</a>
     <a class="btn btn-secondary" href="/admin/manage/{{ tenant.slug }}/users">Users</a>
   </div>
 </div>
 
-<div class="history-context-bar">
-  <div class="history-logo">{{ tenant.name[0]|upper }}</div>
+<div class="hist-context">
+  <div class="hist-logo">{{ tenant.name[0]|upper }}</div>
   <div>
-    <div style="font-size:15px;font-weight:600;color:var(--slate-900);">{{ tenant.name }}</div>
-    <div style="font-size:12px;color:var(--slate-500);margin-top:2px;">
-      {{ total }} total messages logged
-    </div>
+    <div class="hist-context-name">{{ tenant.name }}</div>
+    <div class="hist-context-meta">{{ total }} messages match current filters</div>
   </div>
 </div>
 
-<div class="card">
-  <div class="card-body no-pad">
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>When</th>
-            <th>User</th>
-            <th>Bot</th>
-            <th>Direction</th>
-            <th>Message</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for row in history %}
-          <tr>
-            <td class="ts-cell">{{ row.timestamp.strftime('%d %b %Y, %H:%M') }}</td>
-            <td>
-              {% if row.user_name %}
-                <strong style="color:var(--slate-900);">{{ row.user_name }}</strong>
-              {% elif row.user_email %}
-                {{ row.user_email }}
-              {% else %}
-                <code>{{ row.slack_user_id or '—' }}</code>
-              {% endif %}
-            </td>
-            <td>{{ row.bot_name }}</td>
-            <td>
-              {% if row.direction == 'inbound' %}
-                <span class="dir-badge dir-inbound">↘ Inbound</span>
-              {% else %}
-                <span class="dir-badge dir-outbound">↗ Outbound</span>
-              {% endif %}
-            </td>
-            <td><div class="msg-preview">{{ row.text or '—' }}</div></td>
-          </tr>
-          {% else %}
-          <tr><td colspan="5">
-            <div class="empty">
-              <div class="empty-icon">📜</div>
-              <div class="empty-title">No history yet</div>
-              <div class="empty-desc">Messages will appear here as users interact with the bots.</div>
-            </div>
-          </td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
+<form method="GET" class="filter-bar">
+  <div class="filter-field">
+    <label>Bot</label>
+    <select name="bot_id">
+      <option value="">All bots</option>
+      {% for b in bots %}
+        <option value="{{ b.id }}" {% if active_filters.bot_id == b.id %}selected{% endif %}>{{ b.name }}</option>
+      {% endfor %}
+    </select>
   </div>
+  <div class="filter-field">
+    <label>Direction</label>
+    <select name="direction">
+      <option value="">All</option>
+      <option value="inbound"  {% if active_filters.direction == 'inbound' %}selected{% endif %}>Inbound</option>
+      <option value="outbound" {% if active_filters.direction == 'outbound' %}selected{% endif %}>Outbound</option>
+    </select>
+  </div>
+  <div class="filter-field">
+    <label>Time</label>
+    <select name="days">
+      <option value="">All time</option>
+      <option value="1"  {% if active_filters.days == 1 %}selected{% endif %}>Last 24 hours</option>
+      <option value="7"  {% if active_filters.days == 7 %}selected{% endif %}>Last 7 days</option>
+      <option value="30" {% if active_filters.days == 30 %}selected{% endif %}>Last 30 days</option>
+    </select>
+  </div>
+  <div class="filter-field grow">
+    <label>Search message text</label>
+    <input type="text" name="q" value="{{ active_filters.q }}" placeholder="Search…">
+  </div>
+  <div class="filter-actions">
+    <button type="submit" class="fbtn fbtn-primary">Apply</button>
+    <a href="/admin/manage/{{ tenant.slug }}/history" class="fbtn fbtn-ghost">Clear</a>
+  </div>
+</form>
+
+<div class="hist-card">
+  <table class="hist-table">
+    <thead>
+      <tr>
+        <th>When</th>
+        <th>User</th>
+        <th>Bot</th>
+        <th>Direction</th>
+        <th>Message</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% set palette = ['#4f46e5','#0891b2','#0d9488','#16a34a','#ca8a04','#dc2626','#db2777','#7c3aed'] %}
+      {% for row in history %}
+      {% set display = row.user_name or row.user_email or row.slack_user_id or '?' %}
+      <tr>
+        <td class="ts-cell">{{ row.timestamp.strftime('%d %b %Y, %H:%M') }}</td>
+        <td>
+          <div class="u-cell">
+            <div class="u-avatar" style="background: {{ palette[loop.index0 % 8] }};">{{ display[0]|upper }}</div>
+            <div>
+              {% if row.user_name %}
+                <div class="u-name">{{ row.user_name }}</div>
+              {% elif row.user_email %}
+                <div class="u-name">{{ row.user_email }}</div>
+              {% else %}
+                <div class="u-id">{{ row.slack_user_id or '—' }}</div>
+              {% endif %}
+            </div>
+          </div>
+        </td>
+        <td>{{ row.bot_name }}</td>
+        <td>
+          {% if row.direction == 'inbound' %}
+            <span class="dir dir-in">Inbound</span>
+          {% else %}
+            <span class="dir dir-out">Outbound</span>
+          {% endif %}
+        </td>
+        <td>
+          <div class="msg-preview">{{ row.text or '—' }}</div>
+          {% if row.kind == 'ai_reply' %}<span class="kind-tag">AI</span>{% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5">
+        <div class="hist-empty">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1.5" style="width:40px;height:40px;margin:0 auto;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8"/></svg>
+          <div class="hist-empty-title">No messages match</div>
+          <div>Try adjusting or clearing the filters above.</div>
+        </div>
+      </td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
 </div>
 
 {% if total_pages > 1 %}
 <div class="pagination">
   <div class="pagination-info">Page {{ page }} of {{ total_pages }}</div>
   <div class="pagination-controls">
-    <a class="page-link {% if page <= 1 %}disabled{% endif %}"
-       href="?page={{ page - 1 }}">‹ Prev</a>
-
+    <a class="page-link {% if page <= 1 %}disabled{% endif %}" href="?page={{ page - 1 }}{% if filter_qs %}&{{ filter_qs }}{% endif %}">Prev</a>
     {% for p in range(1, total_pages + 1) %}
       {% if p == 1 or p == total_pages or (p >= page - 2 and p <= page + 2) %}
-        <a class="page-link {% if p == page %}active{% endif %}" href="?page={{ p }}">{{ p }}</a>
+        <a class="page-link {% if p == page %}active{% endif %}" href="?page={{ p }}{% if filter_qs %}&{{ filter_qs }}{% endif %}">{{ p }}</a>
       {% elif p == page - 3 or p == page + 3 %}
         <span class="page-ellipsis">…</span>
       {% endif %}
     {% endfor %}
-
-    <a class="page-link {% if page >= total_pages %}disabled{% endif %}"
-       href="?page={{ page + 1 }}">Next ›</a>
+    <a class="page-link {% if page >= total_pages %}disabled{% endif %}" href="?page={{ page + 1 }}{% if filter_qs %}&{{ filter_qs }}{% endif %}">Next</a>
   </div>
 </div>
 {% endif %}

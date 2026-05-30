@@ -38,9 +38,21 @@
 }
 
 .auth-logo {
-  font-size: 44px;
-  text-align: center;
-  margin-bottom: 8px;
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #3949ab 0%, #1a237e 100%);
+  border-radius: 14px;
+  color: white;
+  box-shadow: 0 6px 16px rgba(57, 73, 171, 0.3);
+}
+
+.auth-logo svg {
+  width: 30px;
+  height: 30px;
 }
 
 .auth-brand {

@@ -1,68 +1,46 @@
 {% extends "base.html" %}
 {% block title %}Users — {{ tenant.name }}{% endblock %}
-{% block header_title %}{{ tenant.name }} · Users{% endblock %}
 
-{% block extra_css %}
-<link rel="stylesheet" href="/static/css/manage_users.css">
-{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="/static/css/manage_users.css">{% endblock %}
 
 {% block content %}
 
 <div class="page-header">
   <div>
     <h1 class="page-title">Slack Users</h1>
-    <p class="page-subtitle">People who've messaged any bot in this workspace.</p>
+    <p class="page-subtitle">People who've messaged any bot in this workspace</p>
   </div>
   <div class="page-actions">
-    <a class="btn btn-secondary" href="/admin/manage">← All tenants</a>
-    <a class="btn btn-secondary" href="/admin/manage/{{ tenant.slug }}">View bots</a>
+    <a class="btn btn-secondary" href="/admin/manage">All tenants</a>
+    <a class="btn btn-secondary" href="/admin/manage/{{ tenant.slug }}">Bots</a>
     <a class="btn btn-secondary" href="/admin/manage/{{ tenant.slug }}/history">History</a>
+    <a class="btn btn-secondary" href="/admin/manage/{{ tenant.slug }}/groups">Groups</a>
     <button class="btn btn-primary" onclick="openModal('authorize-modal')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+      <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>
       Authorize Installer
     </button>
   </div>
 </div>
 
-<div class="users-context-bar">
-  <div class="users-context-logo">{{ tenant.name[0]|upper }}</div>
-  <div class="users-context-info">
-    <div class="users-context-name">{{ tenant.name }}</div>
-    <div class="users-context-meta">
-      Slug <code>{{ tenant.slug }}</code> · Team ID <code>{{ tenant.slack_team_id }}</code>
-    </div>
-  </div>
+<div class="ctx-bar">
+  <div class="ctx-logo">{{ tenant.name[0]|upper }}</div>
+  <div><div class="ctx-name">{{ tenant.name }}</div><div class="ctx-meta">Slug <code>{{ tenant.slug }}</code> · Team ID <code>{{ tenant.slack_team_id }}</code></div></div>
 </div>
 
 <div class="card">
   <div class="card-header">
-    <div>
-      <div class="card-title">All Users</div>
-      <div class="card-subtitle">Users are auto-mapped the first time they message any bot. Soft-deleted users are auto-restored if they re-engage.</div>
-    </div>
+    <div><div class="card-title">All Users</div><div class="card-subtitle">Auto-mapped on first contact. Soft-deleted users auto-restore if they re-engage.</div></div>
     <div class="filter-tabs">
-      <button class="filter-tab active" data-status="active" onclick="setStatus(event, 'active')">Active <span class="tab-count" id="count-active">—</span></button>
-      <button class="filter-tab" data-status="deleted" onclick="setStatus(event, 'deleted')">Deleted <span class="tab-count" id="count-deleted">—</span></button>
-      <button class="filter-tab" data-status="all" onclick="setStatus(event, 'all')">All <span class="tab-count" id="count-all">—</span></button>
+      <button class="filter-tab active" onclick="setStatus(event,'active')">Active <span class="tab-count" id="c-active">—</span></button>
+      <button class="filter-tab" onclick="setStatus(event,'deleted')">Deleted <span class="tab-count" id="c-deleted">—</span></button>
+      <button class="filter-tab" onclick="setStatus(event,'all')">All <span class="tab-count" id="c-all">—</span></button>
     </div>
   </div>
   <div class="card-body no-pad">
     <div class="table-wrap">
       <table>
-        <thead>
-          <tr>
-            <th>User</th>
-            <th>Slack User ID</th>
-            <th>Email</th>
-            <th>Installer</th>
-            <th>Status</th>
-            <th>Joined</th>
-            <th style="text-align:right;">Actions</th>
-          </tr>
-        </thead>
-        <tbody id="users-tbody">
-          <tr><td colspan="6" style="color:var(--slate-500);text-align:center;padding:var(--sp-8);">Loading…</td></tr>
-        </tbody>
+        <thead><tr><th>User</th><th>Slack User ID</th><th>Email</th><th>Installer</th><th>Status</th><th>Joined</th><th style="text-align:right;">Actions</th></tr></thead>
+        <tbody id="users-tbody"><tr><td colspan="7" style="text-align:center;padding:var(--sp-8);color:var(--n-60);">Loading…</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -71,25 +49,12 @@
 <!-- Authorize Installer Modal -->
 <div class="modal-backdrop" id="authorize-modal">
   <div class="modal" onclick="event.stopPropagation()">
-    <div class="modal-header">
-      <div class="modal-title">Authorize Installer Email</div>
-      <button class="modal-close" onclick="closeModal('authorize-modal')">&times;</button>
-    </div>
+    <div class="modal-header"><div class="modal-title">Authorize Installer Email</div><button class="modal-close" onclick="closeModal('authorize-modal')">&times;</button></div>
     <div class="modal-body">
-      <div class="info-box" style="margin-bottom:var(--sp-4);">
-        Pre-authorize an email to install the app via OAuth — even if this person
-        hasn't messaged the bot yet. When they later interact, their account is
-        automatically linked.
-      </div>
-      <div class="field">
-        <label>Email Address</label>
-        <input type="email" id="auth-email" placeholder="boss@company.com">
-      </div>
+      <div class="info-box">Pre-authorize an email to install the app via OAuth — even before they've messaged a bot. They're auto-linked when they later interact.</div>
+      <div class="field"><label>Email Address</label><input type="email" id="auth-email" placeholder="boss@company.com"></div>
     </div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="closeModal('authorize-modal')">Cancel</button>
-      <button class="btn btn-primary" onclick="authorizeInstaller()">Authorize</button>
-    </div>
+    <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('authorize-modal')">Cancel</button><button class="btn btn-primary" onclick="authorizeInstaller()">Authorize</button></div>
   </div>
 </div>
 
@@ -97,165 +62,73 @@
 
 {% block extra_js %}
 <script>
-const TENANT_ID = {{ tenant.id }};
-let currentStatus = "active";
+const TENANT_ID={{ tenant.id }};
+let currentStatus="active";
+const COLORS=['#0078d4','#0b6a0b','#8a6400','#a4262c','#5c2e91','#038387','#ca5010','#004e8c'];
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function color(id){return COLORS[(id*7)%COLORS.length];}
 
-const AVATAR_COLORS = [
-  '#4f46e5', '#0891b2', '#0d9488', '#16a34a', '#ca8a04',
-  '#dc2626', '#db2777', '#7c3aed', '#2563eb', '#d97706',
-];
+function setStatus(e,s){currentStatus=s;document.querySelectorAll('.filter-tab').forEach(b=>b.classList.remove('active'));e.currentTarget.classList.add('active');loadUsers();}
 
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-}
-
-function getAvatarColor(id) {
-  return AVATAR_COLORS[(id * 7) % AVATAR_COLORS.length];
-}
-
-function setStatus(evt, s) {
-  currentStatus = s;
-  document.querySelectorAll('.filter-tab').forEach(b => b.classList.remove('active'));
-  evt.currentTarget.classList.add('active');
-  loadUsers();
-}
-
-async function loadCounts() {
-  // Load counts for all 3 categories in parallel
-  const [activeRes, deletedRes, allRes] = await Promise.all([
-    api('GET', `/api/admin/tenants/${TENANT_ID}/users?status=active`),
-    api('GET', `/api/admin/tenants/${TENANT_ID}/users?status=deleted`),
-    api('GET', `/api/admin/tenants/${TENANT_ID}/users?status=all`),
+async function loadCounts(){
+  const [a,d,al]=await Promise.all([
+    api('GET',`/api/admin/tenants/${TENANT_ID}/users?status=active`),
+    api('GET',`/api/admin/tenants/${TENANT_ID}/users?status=deleted`),
+    api('GET',`/api/admin/tenants/${TENANT_ID}/users?status=all`),
   ]);
-  document.getElementById('count-active').textContent  = (activeRes.data || []).length;
-  document.getElementById('count-deleted').textContent = (deletedRes.data || []).length;
-  document.getElementById('count-all').textContent     = (allRes.data || []).length;
+  document.getElementById('c-active').textContent=(a.data||[]).length;
+  document.getElementById('c-deleted').textContent=(d.data||[]).length;
+  document.getElementById('c-all').textContent=(al.data||[]).length;
 }
 
-async function loadUsers() {
-  const { data } = await api('GET', `/api/admin/tenants/${TENANT_ID}/users?status=${currentStatus}`);
-  const tbody = document.getElementById('users-tbody');
-
-  if (!Array.isArray(data) || data.length === 0) {
-    const empty = {
-      active:  { icon: '👥', title: 'No active users', desc: 'Users appear here the first time they DM a bot.' },
-      deleted: { icon: '🗑️', title: 'No deleted users', desc: 'Soft-deleted users will show up here.' },
-      all:     { icon: '👥', title: 'No users yet',     desc: 'Users appear here the first time they DM a bot.' },
-    }[currentStatus];
-    tbody.innerHTML = `
-      <tr><td colspan="7">
-        <div class="empty">
-          <div class="empty-icon">${empty.icon}</div>
-          <div class="empty-title">${empty.title}</div>
-          <div class="empty-desc">${empty.desc}</div>
-        </div>
-      </td></tr>`;
+async function loadUsers(){
+  const tbody=document.getElementById('users-tbody');
+  renderSkeletonRows(tbody, 7, 4);
+  const {data}=await api('GET',`/api/admin/tenants/${TENANT_ID}/users?status=${currentStatus}`);
+  if(!Array.isArray(data)||!data.length){
+    const msg={active:'Users appear here the first time they message a bot.',deleted:'Soft-deleted users will show up here.',all:'Users appear here the first time they message a bot.'}[currentStatus];
+    tbody.innerHTML=`<tr><td colspan="7"><div class="empty-state"><div class="empty-state-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/></svg></div><div class="empty-state-title">No ${currentStatus} users</div><div class="empty-state-desc">${msg}</div></div></td></tr>`;
     return;
   }
-
-  tbody.innerHTML = data.map(u => {
-    const fullName = u.display_name || u.real_name || '';
-    const initial = (fullName || u.slack_user_id || '?').trim().charAt(0).toUpperCase();
-    const avatarColor = getAvatarColor(u.id);
-
-    const joined = new Date(u.created_at).toLocaleDateString(undefined, {
-      year: 'numeric', month: 'short', day: 'numeric'
-    });
-
-    const statusBadge = u.is_deleted
-      ? '<span class="badge badge-deleted">Deleted</span>'
-      : '<span class="badge badge-active">Active</span>';
-
-    const nameCell = fullName
-      ? `<div class="user-name">${escapeHtml(fullName)}</div>`
-      : `<div class="user-name user-name-empty">unknown</div>`;
-
-    const emailCell = u.email
-      ? escapeHtml(u.email)
-      : '<span class="value-empty">—</span>';
-
-    const actionBtn = u.is_deleted
-      ? `<button class="btn btn-sm" onclick="restoreUser(${u.id})">Restore</button>`
-      : `<button class="btn btn-danger btn-sm" onclick="softDelete(${u.id}, '${escapeHtml(u.slack_user_id)}')">Soft Delete</button>`;
-
-    const adminBadge = u.is_admin
-      ? '<span class="badge badge-info" style="background:#e0e7ff;color:#4338ca;">⭐ Admin</span>'
-      : '<span class="value-empty">—</span>';
-
-    const adminToggle = u.is_admin
-      ? `<button class="btn btn-sm" onclick="setAdmin(${u.id}, false)">Revoke</button>`
-      : `<button class="btn btn-sm" onclick="setAdmin(${u.id}, true)">Make installer</button>`;
-
-    return `
-      <tr>
-        <td>
-          <div class="user-cell">
-            <div class="user-avatar" style="background:${avatarColor};">${escapeHtml(initial)}</div>
-            ${nameCell}
-          </div>
-        </td>
-        <td><code>${escapeHtml(u.slack_user_id)}</code></td>
-        <td>${emailCell}</td>
-        <td>${adminBadge}</td>
-        <td>${statusBadge}</td>
-        <td>${joined}</td>
-        <td><div class="td-actions">${adminToggle} ${actionBtn}</div></td>
-      </tr>`;
+  tbody.innerHTML=data.map(u=>{
+    const name=u.display_name||u.real_name||'';
+    const init=(name||u.slack_user_id||'?').trim().charAt(0).toUpperCase();
+    const joined=new Date(u.created_at).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'});
+    const st=u.is_deleted?'<span class="badge badge-deleted">Deleted</span>':'<span class="badge badge-active">Active</span>';
+    const nameCell=name?`<div class="user-name">${esc(name)}</div>`:`<div class="user-name user-name-empty">unknown</div>`;
+    const email=u.email?esc(u.email):'<span class="value-empty">—</span>';
+    const slackId=u.slack_user_id.startsWith('PENDING:')?`<span class="slack-pending">Pending</span>`:`<code>${esc(u.slack_user_id)}</code>`;
+    const adminBadge=u.is_admin?'<span class="badge badge-info" style="background:var(--brand-50);color:var(--brand-700);">Admin</span>':'<span class="value-empty">—</span>';
+    const adminBtn=u.is_admin?`<button class="btn btn-sm" onclick="setAdmin(${u.id},false)">Revoke</button>`:`<button class="btn btn-sm" onclick="setAdmin(${u.id},true)">Make installer</button>`;
+    const actBtn=u.is_deleted?`<button class="btn btn-sm" onclick="restoreU(${u.id})">Restore</button>`:`<button class="btn btn-danger btn-sm" onclick="delU(${u.id},'${esc(u.slack_user_id)}')">Soft Delete</button>`;
+    return `<tr>
+      <td><div class="user-cell"><div class="user-avatar" style="background:${color(u.id)};">${esc(init)}</div>${nameCell}</div></td>
+      <td>${slackId}</td>
+      <td>${email}</td>
+      <td>${adminBadge}</td>
+      <td>${st}</td>
+      <td>${joined}</td>
+      <td><div class="td-actions">${adminBtn} ${actBtn}</div></td>
+    </tr>`;
   }).join('');
 }
 
-async function softDelete(id, slackId) {
-  if (!confirm(`Soft-delete user ${slackId}?\n\nMessage history stays intact. They'll be auto-restored if they message a bot again.`)) return;
-  const { ok } = await api('POST', `/api/admin/users/${id}/soft-delete`);
-  if (ok) {
-    toast('User soft-deleted', 'success');
-    await Promise.all([loadUsers(), loadCounts()]);
-  } else {
-    toast('Failed to delete', 'error');
-  }
-}
+async function setAdmin(id,m){const {ok}=await api('POST',`/api/admin/users/${id}/set-admin?make_admin=${m}`);if(ok){toast(m?'Marked installer':'Revoked','success');Promise.all([loadUsers(),loadCounts()]);}else toast('Failed','error');}
 
-async function restoreUser(id) {
-  const { ok } = await api('POST', `/api/admin/users/${id}/restore`);
-  if (ok) {
-    toast('User restored', 'success');
-    await Promise.all([loadUsers(), loadCounts()]);
-  } else {
-    toast('Failed to restore', 'error');
-  }
-}
-
-async function setAdmin(id, makeAdmin) {
-  const { ok } = await api('POST', `/api/admin/users/${id}/set-admin?make_admin=${makeAdmin}`);
-  if (ok) {
-    toast(makeAdmin ? 'Marked as authorized installer' : 'Installer access revoked', 'success');
-    await Promise.all([loadUsers(), loadCounts()]);
-  } else {
-    toast('Failed to update', 'error');
-  }
-}
-
-async function authorizeInstaller() {
-  const email = document.getElementById('auth-email').value.trim();
-  if (!email || !email.includes('@')) {
-    toast('Enter a valid email', 'error');
-    return;
-  }
-  const { ok, data } = await api(
-    'POST',
-    `/api/admin/tenants/${TENANT_ID}/authorize-installer?email=${encodeURIComponent(email)}`
+async function delU(id,sid){
+  const ok = await confirmAction(
+    `Soft-delete user ${sid}? Message history stays intact. They'll be auto-restored if they message a bot again.`,
+    { title: 'Soft-delete user?', confirmText: 'Soft Delete', danger: true }
   );
-  if (ok) {
-    toast('Installer authorized', 'success');
-    closeModal('authorize-modal');
-    document.getElementById('auth-email').value = '';
-    await Promise.all([loadUsers(), loadCounts()]);
-  } else {
-    toast((data && data.detail) || 'Failed to authorize', 'error');
-  }
+  if(!ok) return;
+  const {ok:success}=await api('POST',`/api/admin/users/${id}/soft-delete`);
+  if(success){toast('User soft-deleted','success');Promise.all([loadUsers(),loadCounts()]);}else toast('Failed to delete','error');
 }
 
-loadCounts();
-loadUsers();
+async function restoreU(id){const {ok}=await api('POST',`/api/admin/users/${id}/restore`);if(ok){toast('Restored','success');Promise.all([loadUsers(),loadCounts()]);}else toast('Failed','error');}
+
+async function authorizeInstaller(){const email=document.getElementById('auth-email').value.trim();if(!email||!email.includes('@')){toast('Enter a valid email','error');return;}const {ok,data}=await api('POST',`/api/admin/tenants/${TENANT_ID}/authorize-installer?email=${encodeURIComponent(email)}`);if(ok){toast('Installer authorized','success');closeModal('authorize-modal');document.getElementById('auth-email').value='';Promise.all([loadUsers(),loadCounts()]);}else toast((data&&data.detail)||'Failed','error');}
+
+loadCounts();loadUsers();
 </script>
 {% endblock %}

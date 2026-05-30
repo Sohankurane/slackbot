@@ -1,184 +1,71 @@
 {% extends "base.html" %}
 {% block title %}Compose — Slackbot Admin{% endblock %}
-{% block header_title %}Compose Message{% endblock %}
 
-{% block extra_css %}
-<link rel="stylesheet" href="/static/css/compose.css">
-{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="/static/css/compose.css">{% endblock %}
 
 {% block content %}
 
 <div class="page-header">
   <div>
     <h1 class="page-title">Compose Message</h1>
-    <p class="page-subtitle">Send Alerts, free-text questions, or MCQs to any Slack channel.</p>
+    <p class="page-subtitle">Send Alerts, questions, or MCQs to any Slack channel</p>
   </div>
 </div>
 
-<div class="compose-context-bar">
-  <div class="compose-context-icon">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><path d="M22 6l-10 7L2 6"/></svg>
-  </div>
-  <div class="compose-context-info">
-    <div class="compose-context-title">Sending as Tenant: <code>{{ tenant }}</code></div>
-    <div class="compose-context-meta">All messages render via Slack Block Kit.</div>
-  </div>
+<div class="ctx-bar">
+  <div class="ctx-ico"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><path d="M22 6l-10 7L2 6"/></svg></div>
+  <div><div class="ctx-title">Tenant: <code>{{ tenant }}</code></div><div class="ctx-meta">Messages render via Slack Block Kit</div></div>
 </div>
 
-<div class="compose-tabs">
-  <button class="compose-tab active" data-tab="alert" onclick="showTab(event, 'alert')">
-    <span class="compose-tab-icon">🚨</span>
-    Alert
-  </button>
-  <button class="compose-tab" data-tab="qa" onclick="showTab(event, 'qa')">
-    <span class="compose-tab-icon">❓</span>
-    Q&amp;A
-  </button>
-  <button class="compose-tab" data-tab="mcq" onclick="showTab(event, 'mcq')">
-    <span class="compose-tab-icon">📋</span>
-    MCQ
-  </button>
-</div>
-
-<!-- Alert panel -->
-<div id="tab-alert" class="tab-panel active">
-  <div class="card">
-    <div class="card-header">
-      <div>
-        <div class="card-title">Send Alert</div>
-        <div class="card-subtitle">Broadcast a notification with severity styling.</div>
-      </div>
+<div class="card">
+  <div class="card-body">
+    <div class="tabs">
+      <button class="tab active" onclick="showTab(event,'alert')"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg>Alert</button>
+      <button class="tab" onclick="showTab(event,'qa')"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"/></svg>Q&amp;A</button>
+      <button class="tab" onclick="showTab(event,'mcq')"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>MCQ</button>
     </div>
-    <div class="card-body">
-      <div class="compose-form">
-        <div class="field-row-2">
-          <div class="field">
-            <label>Bot</label>
-            <select id="alert-bot">
-              {% for bot in bots %}<option value="{{ bot.slug }}">{{ bot.name }}</option>{% endfor %}
-            </select>
-          </div>
-          <div class="field">
-            <label>Channel ID <small>(C0… or D0…)</small></label>
-            <input type="text" id="alert-channel" placeholder="C0XXXXXXX">
-          </div>
-        </div>
 
-        <div class="field">
-          <label>Severity</label>
-          <div class="severity-pills">
-            <label class="severity-pill info-pill selected">
-              <input type="radio" name="alert-level" value="info" checked>
-              <span class="dot"></span>
-              Info
-            </label>
-            <label class="severity-pill warning-pill">
-              <input type="radio" name="alert-level" value="warning">
-              <span class="dot"></span>
-              Warning
-            </label>
-            <label class="severity-pill critical-pill">
-              <input type="radio" name="alert-level" value="critical">
-              <span class="dot"></span>
-              Critical
-            </label>
-          </div>
-        </div>
-
-        <div class="field">
-          <label>Message</label>
-          <textarea id="alert-message" rows="4" placeholder="Your alert message…"></textarea>
-        </div>
-
-        <div class="send-bar">
-          <div class="send-bar-hint">Tip: paste a channel ID from Slack (open channel → click name → bottom of popup).</div>
-          <button class="btn btn-primary" onclick="sendAlert()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-            Send Alert
-          </button>
+    <!-- Alert -->
+    <div id="p-alert" class="panel active">
+      <div class="f2">
+        <div class="field"><label>Bot</label><select id="a-bot">{% for bot in bots %}<option value="{{ bot.slug }}">{{ bot.name }}</option>{% endfor %}</select></div>
+        <div class="field"><label>Channel ID</label><input type="text" id="a-chan" placeholder="C0XXXXXXX"></div>
+      </div>
+      <div class="field"><label>Severity</label>
+        <div class="sev">
+          <label class="sev-pill info sel"><input type="radio" name="lv" value="info" checked><span class="dot"></span>Info</label>
+          <label class="sev-pill warning"><input type="radio" name="lv" value="warning"><span class="dot"></span>Warning</label>
+          <label class="sev-pill critical"><input type="radio" name="lv" value="critical"><span class="dot"></span>Critical</label>
         </div>
       </div>
+      <div class="field"><label>Message</label><textarea id="a-msg" rows="4" placeholder="Your alert message…"></textarea></div>
+      <div class="send-bar"><div class="send-hint">Paste a channel ID from Slack (channel name → bottom of popup).</div>
+        <button class="btn btn-primary" onclick="sendAlert()"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Send Alert</button>
+      </div>
     </div>
-  </div>
-</div>
 
-<!-- Q&A panel -->
-<div id="tab-qa" class="tab-panel">
-  <div class="card">
-    <div class="card-header">
-      <div>
-        <div class="card-title">Send Open Question</div>
-        <div class="card-subtitle">Ask a free-text question. Recipients reply in-thread.</div>
+    <!-- QA -->
+    <div id="p-qa" class="panel">
+      <div class="f2">
+        <div class="field"><label>Bot</label><select id="q-bot">{% for bot in bots %}<option value="{{ bot.slug }}">{{ bot.name }}</option>{% endfor %}</select></div>
+        <div class="field"><label>Channel ID</label><input type="text" id="q-chan" placeholder="C0XXXXXXX"></div>
+      </div>
+      <div class="field"><label>Question</label><textarea id="q-text" rows="3" placeholder="What is your question?"></textarea></div>
+      <div class="send-bar"><div class="send-hint">Recipients reply directly to the bot's message.</div>
+        <button class="btn btn-primary" onclick="sendQA()"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Send Question</button>
       </div>
     </div>
-    <div class="card-body">
-      <div class="compose-form">
-        <div class="field-row-2">
-          <div class="field">
-            <label>Bot</label>
-            <select id="qa-bot">
-              {% for bot in bots %}<option value="{{ bot.slug }}">{{ bot.name }}</option>{% endfor %}
-            </select>
-          </div>
-          <div class="field">
-            <label>Channel ID</label>
-            <input type="text" id="qa-channel" placeholder="C0XXXXXXX">
-          </div>
-        </div>
-        <div class="field">
-          <label>Question</label>
-          <textarea id="qa-question" rows="3" placeholder="What is your question?"></textarea>
-        </div>
-        <div class="send-bar">
-          <div class="send-bar-hint">Recipients can reply directly to the bot's message.</div>
-          <button class="btn btn-primary" onclick="sendQA()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-            Send Question
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
 
-<!-- MCQ panel -->
-<div id="tab-mcq" class="tab-panel">
-  <div class="card">
-    <div class="card-header">
-      <div>
-        <div class="card-title">Send Multiple Choice Question</div>
-        <div class="card-subtitle">Question with 2–6 lettered options.</div>
+    <!-- MCQ -->
+    <div id="p-mcq" class="panel">
+      <div class="f2">
+        <div class="field"><label>Bot</label><select id="m-bot">{% for bot in bots %}<option value="{{ bot.slug }}">{{ bot.name }}</option>{% endfor %}</select></div>
+        <div class="field"><label>Channel ID</label><input type="text" id="m-chan" placeholder="C0XXXXXXX"></div>
       </div>
-    </div>
-    <div class="card-body">
-      <div class="compose-form">
-        <div class="field-row-2">
-          <div class="field">
-            <label>Bot</label>
-            <select id="mcq-bot">
-              {% for bot in bots %}<option value="{{ bot.slug }}">{{ bot.name }}</option>{% endfor %}
-            </select>
-          </div>
-          <div class="field">
-            <label>Channel ID</label>
-            <input type="text" id="mcq-channel" placeholder="C0XXXXXXX">
-          </div>
-        </div>
-        <div class="field">
-          <label>Question</label>
-          <textarea id="mcq-question" rows="2" placeholder="Your question?"></textarea>
-        </div>
-        <div class="field">
-          <label>Options <small>(one per line, 2–6 lines)</small></label>
-          <textarea id="mcq-options" rows="5" placeholder="Option A&#10;Option B&#10;Option C"></textarea>
-        </div>
-        <div class="send-bar">
-          <div class="send-bar-hint">Options are auto-lettered A, B, C… in Slack.</div>
-          <button class="btn btn-primary" onclick="sendMCQ()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-            Send MCQ
-          </button>
-        </div>
+      <div class="field"><label>Question</label><textarea id="m-text" rows="2" placeholder="Your question?"></textarea></div>
+      <div class="field"><label>Options <small>(one per line, 2–6)</small></label><textarea id="m-opts" rows="5" placeholder="Option A&#10;Option B&#10;Option C"></textarea></div>
+      <div class="send-bar"><div class="send-hint">Options auto-lettered A, B, C…</div>
+        <button class="btn btn-primary" onclick="sendMCQ()"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Send MCQ</button>
       </div>
     </div>
   </div>
@@ -188,77 +75,12 @@
 
 {% block extra_js %}
 <script>
-const TENANT = "{{ tenant }}";
+const TENANT="{{ tenant }}";
+function showTab(e,n){document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.getElementById('p-'+n).classList.add('active');e.currentTarget.classList.add('active');}
+document.querySelectorAll('input[name="lv"]').forEach(i=>i.addEventListener('change',()=>{document.querySelectorAll('.sev-pill').forEach(p=>p.classList.remove('sel'));i.closest('.sev-pill').classList.add('sel');}));
 
-function showTab(evt, name) {
-  document.querySelectorAll('.tab-panel').forEach(el => el.classList.remove('active'));
-  document.querySelectorAll('.compose-tab').forEach(el => el.classList.remove('active'));
-  document.getElementById('tab-' + name).classList.add('active');
-  evt.currentTarget.classList.add('active');
-}
-
-// Severity radio styling — toggle selected class visually
-document.querySelectorAll('input[name="alert-level"]').forEach(input => {
-  input.addEventListener('change', () => {
-    document.querySelectorAll('.severity-pill').forEach(p => p.classList.remove('selected'));
-    input.closest('.severity-pill').classList.add('selected');
-  });
-});
-
-async function sendAlert() {
-  const level = document.querySelector('input[name="alert-level"]:checked').value;
-  const body = {
-    bot_slug:  document.getElementById('alert-bot').value,
-    channel:   document.getElementById('alert-channel').value.trim(),
-    message:   document.getElementById('alert-message').value,
-    level,
-  };
-  if (!body.channel || !body.message) { toast('Channel and message are required', 'error'); return; }
-  const { ok, data } = await api('POST', `/api/admin/send/alert?tenant=${TENANT}`, body);
-  if (ok) {
-    toast('Alert sent to Slack', 'success');
-    document.getElementById('alert-message').value = '';
-  } else {
-    toast((data && data.detail) || 'Failed to send', 'error');
-  }
-}
-
-async function sendQA() {
-  const body = {
-    bot_slug: document.getElementById('qa-bot').value,
-    channel:  document.getElementById('qa-channel').value.trim(),
-    question: document.getElementById('qa-question').value,
-  };
-  if (!body.channel || !body.question) { toast('Channel and question are required', 'error'); return; }
-  const { ok, data } = await api('POST', `/api/admin/send/qa?tenant=${TENANT}`, body);
-  if (ok) {
-    toast('Question sent to Slack', 'success');
-    document.getElementById('qa-question').value = '';
-  } else {
-    toast((data && data.detail) || 'Failed to send', 'error');
-  }
-}
-
-async function sendMCQ() {
-  const options = document.getElementById('mcq-options').value
-    .split('\n').map(s => s.trim()).filter(Boolean);
-  if (options.length < 2) { toast('Need at least 2 options', 'error'); return; }
-  if (options.length > 6) { toast('Maximum 6 options', 'error'); return; }
-  const body = {
-    bot_slug: document.getElementById('mcq-bot').value,
-    channel:  document.getElementById('mcq-channel').value.trim(),
-    question: document.getElementById('mcq-question').value,
-    options,
-  };
-  if (!body.channel || !body.question) { toast('Channel and question are required', 'error'); return; }
-  const { ok, data } = await api('POST', `/api/admin/send/mcq?tenant=${TENANT}`, body);
-  if (ok) {
-    toast('MCQ sent to Slack', 'success');
-    document.getElementById('mcq-question').value = '';
-    document.getElementById('mcq-options').value = '';
-  } else {
-    toast((data && data.detail) || 'Failed to send', 'error');
-  }
-}
+async function sendAlert(){const level=document.querySelector('input[name="lv"]:checked').value;const body={bot_slug:a_bot.value,channel:a_chan.value.trim(),message:a_msg.value,level};if(!body.channel||!body.message){toast('Channel and message required','error');return;}const {ok,data}=await api('POST',`/api/admin/send/alert?tenant=${TENANT}`,body);if(ok){toast('Alert sent','success');a_msg.value='';}else toast((data&&data.detail)||'Failed','error');}
+async function sendQA(){const body={bot_slug:q_bot.value,channel:q_chan.value.trim(),question:q_text.value};if(!body.channel||!body.question){toast('Channel and question required','error');return;}const {ok,data}=await api('POST',`/api/admin/send/qa?tenant=${TENANT}`,body);if(ok){toast('Question sent','success');q_text.value='';}else toast((data&&data.detail)||'Failed','error');}
+async function sendMCQ(){const options=m_opts.value.split('\n').map(s=>s.trim()).filter(Boolean);if(options.length<2){toast('Need at least 2 options','error');return;}if(options.length>6){toast('Max 6 options','error');return;}const body={bot_slug:m_bot.value,channel:m_chan.value.trim(),question:m_text.value,options};if(!body.channel||!body.question){toast('Channel and question required','error');return;}const {ok,data}=await api('POST',`/api/admin/send/mcq?tenant=${TENANT}`,body);if(ok){toast('MCQ sent','success');m_text.value='';m_opts.value='';}else toast((data&&data.detail)||'Failed','error');}
 </script>
 {% endblock %}

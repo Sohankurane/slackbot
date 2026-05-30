@@ -1,101 +1,65 @@
 {% extends "base.html" %}
 {% block title %}App Templates — Slackbot Admin{% endblock %}
-{% block header_title %}App Templates{% endblock %}
 
-{% block extra_css %}
-<link rel="stylesheet" href="/static/css/manage_templates.css">
-{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="/static/css/manage_templates.css">{% endblock %}
 
 {% block content %}
 
 <div class="page-header">
   <div>
-    <h1 class="page-title">Slack App Templates</h1>
-    <p class="page-subtitle">Reusable Slack app definitions. One template, many workspace installs.</p>
+    <h1 class="page-title">App Templates</h1>
+    <p class="page-subtitle">Reusable Slack app definitions — one template, many installs</p>
   </div>
 </div>
 
 <div class="info-box">
-  <strong>What are these?</strong><br>
-  App templates are reusable Slack app definitions. Anyone can install a template into their own
-  Slack workspace using the install URL — no manual setup needed. Once installed, a new
-  <strong>Tenant + Bot</strong> row is created automatically via OAuth.
+  <strong>What are these?</strong> Anyone with a template's install URL can add the bot to their own Slack workspace via OAuth. A new Tenant + Bot is created automatically.
 </div>
 
 {% if templates_list %}
   {% for t in templates_list %}
-  <div class="template-card">
-    <div class="template-header">
-      <div class="template-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-          <path d="M3.27 6.96L12 12.01l8.73-5.05M12 22.08V12"/>
-        </svg>
-      </div>
-      <div class="template-meta">
-        <div class="template-name">{{ t.name }}</div>
-        <div class="template-sub">Slug <code>{{ t.slug }}</code></div>
-      </div>
-      <div class="template-status">
-        {% if t.is_active %}
-          <span class="badge badge-active">Active</span>
-        {% else %}
-          <span class="badge badge-disabled">Disabled</span>
-        {% endif %}
-      </div>
+  <div class="tpl">
+    <div class="tpl-head">
+      <div class="tpl-ico"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.27 6.96L12 12.01l8.73-5.05M12 22.08V12"/></svg></div>
+      <div style="flex:1;"><div class="tpl-name">{{ t.name }}</div><div class="tpl-slug">Slug <code>{{ t.slug }}</code></div></div>
+      {% if t.is_active %}<span class="badge badge-active">Active</span>{% else %}<span class="badge badge-disabled">Disabled</span>{% endif %}
     </div>
-
-    <div class="template-body">
-      <!-- Install URL -->
+    <div class="tpl-body">
       <div>
-        <label class="template-block-label">Install URL — share this with anyone</label>
-        <div class="install-url-row">
-          <div class="install-url-text" id="url-{{ t.id }}">{% if public_base_url %}{{ public_base_url }}/slack/install/{{ t.slug }}{% else %}{{ request.url_for('slack_install', template_slug=t.slug) }}{% endif %}</div>
-          <button class="copy-btn" onclick="copyUrl({{ t.id }}, this)">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        <label class="tpl-label">Install URL — share this</label>
+        <div class="url-bar">
+          <div class="url-text" id="url-{{ t.id }}">{% if public_base_url %}{{ public_base_url }}/slack/install/{{ t.slug }}{% else %}{{ request.url_for('slack_install', template_slug=t.slug) }}{% endif %}</div>
+          <button class="copy-btn" onclick="copyUrl({{ t.id }},this)">
+            <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
             <span>Copy</span>
           </button>
         </div>
       </div>
-
-      <!-- Scopes -->
       <div>
-        <label class="template-block-label">OAuth Scopes ({{ t.default_scopes|length }})</label>
-        <div class="scopes-list">
-          {% for scope in t.default_scopes %}
-            <span class="scope-pill">{{ scope }}</span>
-          {% endfor %}
-        </div>
+        <label class="tpl-label">OAuth Scopes ({{ t.default_scopes|length }})</label>
+        <div class="scopes">{% for s in t.default_scopes %}<span class="scope">{{ s }}</span>{% endfor %}</div>
       </div>
     </div>
   </div>
   {% endfor %}
 {% else %}
-<div class="card">
-  <div class="empty">
-    <div class="empty-icon">📦</div>
-    <div class="empty-title">No app templates yet</div>
-    <div class="empty-desc">
-      Register your first one by running <code>python -m scripts.seed_app_template</code> from your terminal.
-    </div>
-  </div>
-</div>
+<div class="card"><div class="empty">
+  <svg class="ico-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.27 6.96L12 12.01l8.73-5.05M12 22.08V12"/></svg>
+  <div class="empty-title">No templates yet</div>
+  <div class="empty-desc">Run <code>python -m scripts.seed_app_template</code> to register one.</div>
+</div></div>
 {% endif %}
 
 {% endblock %}
 
 {% block extra_js %}
 <script>
-function copyUrl(id, btn) {
-  const el = document.getElementById('url-' + id);
-  navigator.clipboard.writeText(el.textContent.trim()).then(() => {
-    btn.classList.add('copied');
-    btn.querySelector('span').textContent = '✓ Copied';
-    toast('Install URL copied to clipboard', 'success');
-    setTimeout(() => {
-      btn.classList.remove('copied');
-      btn.querySelector('span').textContent = 'Copy';
-    }, 2000);
+function copyUrl(id,btn){
+  const el=document.getElementById('url-'+id);
+  navigator.clipboard.writeText(el.textContent.trim()).then(()=>{
+    btn.classList.add('copied');btn.querySelector('span').textContent='Copied';
+    toast('Install URL copied','success');
+    setTimeout(()=>{btn.classList.remove('copied');btn.querySelector('span').textContent='Copy';},2000);
   });
 }
 </script>

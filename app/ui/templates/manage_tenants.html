@@ -1,61 +1,45 @@
 {% extends "base.html" %}
 {% block title %}Tenants — Slackbot Admin{% endblock %}
-{% block header_title %}Tenants &amp; Bots{% endblock %}
 
-{% block extra_css %}
-<link rel="stylesheet" href="/static/css/manage_tenants.css">
-{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="/static/css/manage_tenants.css">{% endblock %}
 
 {% block content %}
 
 <div class="page-header">
   <div>
     <h1 class="page-title">Tenants</h1>
-    <p class="page-subtitle">Slack workspaces registered in the platform.</p>
+    <p class="page-subtitle">Slack workspaces registered in the platform</p>
   </div>
   <div class="page-actions">
     <button class="btn btn-primary" onclick="openModal('new-tenant-modal')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+      <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>
       Register Workspace
     </button>
   </div>
 </div>
 
 <div class="info-box">
-  <strong>How registration works:</strong> Create a Slack workspace at
-  <a href="https://slack.com" target="_blank" style="color:var(--indigo-600);font-weight:600;">slack.com</a>,
-  copy its Team ID from the URL (looks like <code>T0XXXXXXX</code>), then register it here. Once registered,
-  click <strong>Bots</strong> to install Slack apps into that workspace.
+  <strong>How it works:</strong> Register a Slack workspace by its Team ID (<code>T0XXXXXXX</code>), then click <strong>Bots</strong> to manage its Slack apps.
 </div>
 
 <div class="card">
   <div class="card-header">
-    <div>
-      <div class="card-title">Registered Workspaces</div>
-      <div class="card-subtitle">Click <strong>Bots</strong> next to a workspace to manage its Slack apps.</div>
-    </div>
+    <div><div class="card-title">Registered Workspaces</div></div>
   </div>
   <div class="card-body no-pad">
     <div class="table-wrap">
       <table>
         <thead>
-          <tr>
-            <th>Workspace</th>
-            <th>Slug</th>
-            <th>Slack Team ID</th>
-            <th>Status</th>
-            <th style="text-align:right;">Actions</th>
-          </tr>
+          <tr><th>Workspace</th><th>Slug</th><th>Team ID</th><th>Status</th><th style="text-align:right;">Actions</th></tr>
         </thead>
         <tbody id="tenants-tbody">
-          <tr><td colspan="5" style="color:var(--slate-500);text-align:center;padding:var(--sp-8);">Loading…</td></tr>
+          <tr><td colspan="5" style="text-align:center;padding:var(--sp-8);color:var(--n-60);">Loading…</td></tr>
         </tbody>
       </table>
     </div>
   </div>
 </div>
 
-<!-- New Tenant Modal -->
 <div class="modal-backdrop" id="new-tenant-modal">
   <div class="modal" onclick="event.stopPropagation()">
     <div class="modal-header">
@@ -63,22 +47,13 @@
       <button class="modal-close" onclick="closeModal('new-tenant-modal')">&times;</button>
     </div>
     <div class="modal-body">
-      <div class="field">
-        <label>Slug <small>(lowercase, short id — e.g. <code>prj-sk2</code>)</small></label>
-        <input type="text" id="t-slug" placeholder="prj-sk3">
-      </div>
-      <div class="field">
-        <label>Display Name</label>
-        <input type="text" id="t-name" placeholder="PRJ-SK3">
-      </div>
-      <div class="field">
-        <label>Slack Team ID <small>(from your workspace URL)</small></label>
-        <input type="text" id="t-team-id" placeholder="T0XXXXXXXXX">
-      </div>
+      <div class="field"><label>Slug <small>(e.g. <code>prj-sk3</code>)</small></label><input type="text" id="t-slug" placeholder="prj-sk3"></div>
+      <div class="field"><label>Display Name</label><input type="text" id="t-name" placeholder="PRJ-SK3"></div>
+      <div class="field"><label>Slack Team ID</label><input type="text" id="t-team-id" placeholder="T0XXXXXXXXX"></div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeModal('new-tenant-modal')">Cancel</button>
-      <button class="btn btn-primary" onclick="createTenant()">Register Workspace</button>
+      <button class="btn btn-primary" onclick="createTenant()">Register</button>
     </div>
   </div>
 </div>
@@ -87,92 +62,52 @@
 
 {% block extra_js %}
 <script>
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
-async function loadTenants() {
-  const { data } = await api('GET', '/api/admin/tenants');
+async function loadTenants(){
   const tbody = document.getElementById('tenants-tbody');
-  if (!Array.isArray(data) || data.length === 0) {
-    tbody.innerHTML = `
-      <tr><td colspan="5">
-        <div class="empty">
-          <div class="empty-icon">🏢</div>
-          <div class="empty-title">No workspaces registered</div>
-          <div class="empty-desc">Click "Register Workspace" above to add your first one.</div>
-        </div>
-      </td></tr>`;
+  renderSkeletonRows(tbody, 5, 4);
+  const {data} = await api('GET','/api/admin/tenants');
+  if(!Array.isArray(data)||!data.length){
+    tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="empty-state-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-3"/></svg></div><div class="empty-state-title">No workspaces registered</div><div class="empty-state-desc">Register your first Slack workspace to start receiving messages from your bots.</div><button class="btn btn-primary" onclick="openModal('new-tenant-modal')">Register Workspace</button></div></td></tr>`;
     return;
   }
-  tbody.innerHTML = data.map(t => {
-    const initial = (t.name || '?').charAt(0).toUpperCase();
-    const statusBadge = t.is_active
-      ? '<span class="badge badge-active">Active</span>'
-      : '<span class="badge badge-disabled">Disabled</span>';
-    return `
-      <tr>
-        <td>
-          <div class="tenant-slug-cell">
-            <div class="tenant-mini-logo">${escapeHtml(initial)}</div>
-            <div class="tenant-name-strong">${escapeHtml(t.name)}</div>
-          </div>
-        </td>
-        <td><code>${escapeHtml(t.slug)}</code></td>
-        <td><span class="team-id">${escapeHtml(t.slack_team_id)}</span></td>
-        <td>${statusBadge}</td>
-        <td>
-          <div class="td-actions">
-            <a class="btn btn-secondary btn-sm" href="/admin/manage/${encodeURIComponent(t.slug)}">Bots</a>
-            <a class="btn btn-sm" href="/admin/manage/${encodeURIComponent(t.slug)}/users">Users</a>
-            <button class="btn btn-sm" onclick="toggleActive(${t.id}, ${!t.is_active})">${t.is_active ? 'Disable' : 'Enable'}</button>
-            <button class="btn btn-danger btn-sm" onclick="deleteTenant(${t.id}, '${escapeHtml(t.slug)}')">Delete</button>
-          </div>
-        </td>
-      </tr>`;
+  tbody.innerHTML = data.map(t=>{
+    const init=(t.name||'?').charAt(0).toUpperCase();
+    const badge=t.is_active?'<span class="badge badge-active">Active</span>':'<span class="badge badge-disabled">Disabled</span>';
+    return `<tr>
+      <td><div class="tenant-cell"><div class="tenant-logo">${esc(init)}</div><div class="tenant-name-strong">${esc(t.name)}</div></div></td>
+      <td><code>${esc(t.slug)}</code></td>
+      <td><span class="team-id">${esc(t.slack_team_id)}</span></td>
+      <td>${badge}</td>
+      <td><div class="td-actions">
+        <a class="btn btn-secondary btn-sm" href="/admin/manage/${encodeURIComponent(t.slug)}">Bots</a>
+        <a class="btn btn-sm" href="/admin/manage/${encodeURIComponent(t.slug)}/users">Users</a>
+        <button class="btn btn-sm" onclick="toggleT(${t.id},${!t.is_active})">${t.is_active?'Disable':'Enable'}</button>
+        <button class="btn btn-danger btn-sm" onclick="delT(${t.id},'${esc(t.slug)}')">Delete</button>
+      </div></td>
+    </tr>`;
   }).join('');
 }
 
-async function createTenant() {
-  const body = {
-    slug: document.getElementById('t-slug').value.trim(),
-    name: document.getElementById('t-name').value.trim(),
-    slack_team_id: document.getElementById('t-team-id').value.trim(),
-  };
-  if (!body.slug || !body.name || !body.slack_team_id) {
-    toast('All fields are required', 'error');
-    return;
-  }
-  const { ok, data } = await api('POST', '/api/admin/tenants', body);
-  if (ok) {
-    toast('Workspace registered', 'success');
-    closeModal('new-tenant-modal');
-    ['t-slug','t-name','t-team-id'].forEach(id => document.getElementById(id).value = '');
-    await loadTenants();
-  } else {
-    toast((data && data.detail) || 'Failed to register', 'error');
-  }
+async function createTenant(){
+  const body={slug:document.getElementById('t-slug').value.trim(),name:document.getElementById('t-name').value.trim(),slack_team_id:document.getElementById('t-team-id').value.trim()};
+  if(!body.slug||!body.name||!body.slack_team_id){toast('All fields required','error');return;}
+  const {ok,data}=await api('POST','/api/admin/tenants',body);
+  if(ok){toast('Workspace registered','success');closeModal('new-tenant-modal');['t-slug','t-name','t-team-id'].forEach(i=>document.getElementById(i).value='');loadTenants();}
+  else toast((data&&data.detail)||'Failed','error');
 }
 
-async function toggleActive(id, newActive) {
-  const { ok } = await api('PATCH', `/api/admin/tenants/${id}`, { is_active: newActive });
-  if (ok) {
-    toast(newActive ? 'Workspace enabled' : 'Workspace disabled', 'success');
-    await loadTenants();
-  } else {
-    toast('Failed to update', 'error');
-  }
-}
+async function toggleT(id,a){const {ok}=await api('PATCH',`/api/admin/tenants/${id}`,{is_active:a});if(ok){toast(a?'Enabled':'Disabled','success');loadTenants();}else toast('Failed','error');}
 
-async function deleteTenant(id, slug) {
-  if (!confirm(`Delete workspace "${slug}" and all its bots? This cannot be undone.`)) return;
-  const { ok } = await api('DELETE', `/api/admin/tenants/${id}`);
-  if (ok) {
-    toast('Workspace deleted', 'success');
-    await loadTenants();
-  } else {
-    toast('Failed to delete', 'error');
-  }
+async function delT(id,slug){
+  const ok = await confirmAction(
+    `Delete workspace "${slug}" and all its bots? This cannot be undone.`,
+    { title: 'Delete workspace?', confirmText: 'Delete', danger: true }
+  );
+  if(!ok) return;
+  const {ok:success}=await api('DELETE',`/api/admin/tenants/${id}`);
+  if(success){toast('Workspace deleted','success');loadTenants();}else toast('Failed to delete','error');
 }
 
 loadTenants();

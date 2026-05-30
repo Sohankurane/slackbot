@@ -4,17 +4,25 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Register — Slackbot Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/css/auth.css">
 </head>
 <body class="auth-body auth-body-alt">
   <div class="auth-wrap">
     <div class="auth-card">
-      <div class="auth-logo">✨</div>
+      <div class="auth-logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 3v18M3 12h18"/>
+          <path d="M12 3a4 4 0 0 1 4 4M12 3a4 4 0 0 0-4 4M12 21a4 4 0 0 0 4-4M12 21a4 4 0 0 1-4-4"/>
+        </svg>
+      </div>
       <div class="auth-brand">Create Account</div>
       <p class="auth-subtitle">Join Slackbot Admin</p>
 
       {% if error %}
-        <div class="auth-error">⚠️ {{ error }}</div>
+        <div class="auth-error">{{ error }}</div>
       {% endif %}
 
       <form method="POST" action="/admin/register" class="auth-form">
@@ -56,7 +64,7 @@
             placeholder="Re-enter password">
         </div>
 
-        <button type="submit" class="auth-button">Create Account →</button>
+        <button type="submit" class="auth-button">Create Account</button>
       </form>
 
       <div class="auth-divider"><span>already have an account?</span></div>

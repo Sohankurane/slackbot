@@ -10,10 +10,20 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db
 from app.core.slack_verify import verify_slack_signature
-from app.models import Bot, Message
+from app.models import Bot, Message, Tenant
 from app.services.bot_router import pick_bot
 from app.services.command_handler import handle_message
 from app.services.slack_client import post_message
+
+from app.services.slack_client import fetch_user_profile
+from sqlalchemy import select as _select
+from app.models import SlackUser
+from app.services.ai_service import generate_ai_reply
+
+from app.core.context import set_context
+from app.core.db import get_sessionmaker
+from app.services.user_service import get_or_create_user
+from app.services.group_service import is_user_authorized
 
 logger = logging.getLogger(__name__)
 
@@ -69,10 +79,6 @@ async def slack_events(
 
 async def _handle_event(*, bot_id: int, tenant_slug: str, event: dict) -> None:
     """Runs after we've already 200'd back to Slack."""
-    from app.core.context import set_context
-    from app.core.db import get_sessionmaker
-    from app.services.user_service import get_or_create_user  # NEW
-
     event_type = event.get("type")
     if event.get("bot_id") or event.get("subtype") == "bot_message":
         return
@@ -93,13 +99,9 @@ async def _handle_event(*, bot_id: int, tenant_slug: str, event: dict) -> None:
             tenant_id=bot.tenant_id, tenant_slug=tenant_slug, bot_slug=bot.slug
         )
 
-        # Map the Slack user 
+        # Map the Slack user
         user_display = user  # fallback to slack id
         if user:
-            from app.services.slack_client import fetch_user_profile
-            from sqlalchemy import select as _select
-            from app.models import SlackUser
-
             existing = (await session.execute(
                 _select(SlackUser).where(
                     SlackUser.tenant_id == bot.tenant_id,
@@ -124,6 +126,36 @@ async def _handle_event(*, bot_id: int, tenant_slug: str, event: dict) -> None:
             logger.info(
                 "From user: %s (slack_id=%s)", user_display, mapped_user.slack_user_id
             )
+
+        # Access control — if enabled for this tenant, only members of
+        # bot-enabled groups may use the bot.
+        tenant = await session.get(Tenant, bot.tenant_id)
+        if tenant and tenant.access_control_enabled and user:
+            authorized = await is_user_authorized(
+                session, tenant_id=bot.tenant_id, slack_user_id=user
+            )
+            if not authorized:
+                logger.info(
+                    "Blocked unauthorized user %s in tenant %s", user, tenant.slug
+                )
+                # Log the inbound attempt for the audit trail
+                session.add(Message(
+                    tenant_id=bot.tenant_id, bot_id=bot.id,
+                    direction="inbound", kind="message",
+                    slack_channel_id=channel, slack_user_id=user,
+                    slack_ts=ts, text=text,
+                ))
+                await session.commit()
+                try:
+                    await post_message(
+                        bot_id=bot.id, bot_token=bot.bot_token,
+                        channel=channel,
+                        text="You are not authorized to use this bot.",
+                    )
+                except Exception:
+                    logger.exception("Failed to send unauthorized notice")
+                return
+
         session.add(
             Message(
                 tenant_id=bot.tenant_id,
@@ -138,13 +170,12 @@ async def _handle_event(*, bot_id: int, tenant_slug: str, event: dict) -> None:
         )
         await session.commit()
 
-        # Get response from command handler 
+        # Get response from command handler
         response = await handle_message(bot=bot, text=text)
 
         # AI fallback — only if no command matched AND this bot has AI enabled
         used_ai = False
         if response is None and getattr(bot, "ai_enabled", False) and user:
-            from app.services.ai_service import generate_ai_reply
             response = await generate_ai_reply(
                 session, bot=bot, slack_user_id=user, user_message=text
             )
