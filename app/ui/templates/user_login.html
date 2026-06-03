@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign in — Slackbot</title>
+  <link rel="stylesheet" href="/static/css/user_auth.css">
+</head>
+<body class="uauth-body">
+  <div class="uauth-wrap">
+    <div class="uauth-card">
+      <div class="uauth-logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      </div>
+      <div class="uauth-brand">My Dashboard</div>
+      <p class="uauth-subtitle">Sign in to view your activity</p>
+
+      {% if error %}
+        <div class="uauth-error">{{ error }}</div>
+      {% endif %}
+
+      <form method="POST" action="/user/login" class="uauth-form">
+        <div class="uauth-field">
+          <label>Username</label>
+          <input type="text" name="username" required autofocus autocomplete="username" placeholder="your username">
+        </div>
+        <div class="uauth-field">
+          <label>Password</label>
+          <input type="password" name="password" required autocomplete="current-password" placeholder="••••••••">
+        </div>
+        <button type="submit" class="uauth-button">Sign in</button>
+      </form>
+
+      <div class="uauth-footer">Your credentials are provided by your workspace admin.</div>
+    </div>
+  </div>
+</body>
+</html>

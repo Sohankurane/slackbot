@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Dashboard</title>
+  <link rel="stylesheet" href="/static/css/user_dashboard.css">
+</head>
+<body class="ud-body">
+  <nav class="ud-nav">
+    <div class="ud-nav-brand">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      My Dashboard
+    </div>
+    <form method="POST" action="/user/logout" style="margin:0;">
+      <button type="submit" class="ud-logout">Sign out</button>
+    </form>
+  </nav>
+
+  <main class="ud-main">
+    <!-- Profile -->
+    <section class="ud-card ud-profile">
+      <div class="ud-avatar" id="ud-avatar">?</div>
+      <div>
+        <div class="ud-name" id="ud-name">Loading…</div>
+        <div class="ud-meta" id="ud-meta"></div>
+      </div>
+    </section>
+
+    <!-- Groups -->
+    <section class="ud-card">
+      <div class="ud-card-title">My Groups</div>
+      <div id="ud-groups" class="ud-groups"><span class="ud-empty">Loading…</span></div>
+    </section>
+
+    <!-- Messages -->
+    <section class="ud-card">
+      <div class="ud-card-title">My Message History</div>
+      <div class="ud-table-wrap">
+        <table class="ud-table">
+          <thead><tr><th>Direction</th><th>Bot</th><th>Message</th><th>When</th></tr></thead>
+          <tbody id="ud-msgs"><tr><td colspan="4" class="ud-loading">Loading…</td></tr></tbody>
+        </table>
+      </div>
+      <div class="ud-pager" id="ud-pager"></div>
+    </section>
+  </main>
+
+<script>
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+let curPage=1;
+
+async function get(url){
+  const res=await fetch(url,{credentials:'same-origin'});
+  if(!res.ok) throw new Error('request failed');
+  return res.json();
+}
+
+async function loadMe(){
+  try{
+    const d=await get('/api/user/me');
+    const p=d.profile||{};
+    const name=p.display_name||p.real_name||d.username;
+    document.getElementById('ud-name').textContent=name;
+    document.getElementById('ud-avatar').textContent=(name||'?').charAt(0).toUpperCase();
+    const bits=[];
+    if(p.email) bits.push(p.email);
+    if(p.slack_user_id) bits.push(p.slack_user_id);
+    document.getElementById('ud-meta').textContent=bits.join(' · ');
+    // groups
+    const g=document.getElementById('ud-groups');
+    if(!d.groups||!d.groups.length){g.innerHTML='<span class="ud-empty">You are not in any groups.</span>';}
+    else{g.innerHTML=d.groups.map(x=>`<span class="ud-chip ${x.can_use_bot?'ud-chip-on':''}">${esc(x.name)}${x.can_use_bot?' · bot access':''}</span>`).join('');}
+  }catch(e){
+    document.getElementById('ud-name').textContent='Could not load profile';
+  }
+}
+
+async function loadMsgs(page){
+  curPage=page;
+  const tb=document.getElementById('ud-msgs');
+  tb.innerHTML='<tr><td colspan="4" class="ud-loading">Loading…</td></tr>';
+  try{
+    const d=await get('/api/user/messages?page='+page);
+    if(!d.items||!d.items.length){
+      tb.innerHTML='<tr><td colspan="4" class="ud-empty-row">No messages yet.</td></tr>';
+      document.getElementById('ud-pager').innerHTML='';
+      return;
+    }
+    tb.innerHTML=d.items.map(m=>{
+      const dir=m.direction==='inbound'
+        ? '<span class="ud-badge ud-in">You</span>'
+        : '<span class="ud-badge ud-out">Bot</span>';
+      const when=new Date(m.created_at).toLocaleString();
+      return `<tr><td>${dir}</td><td>${esc(m.bot)}</td><td class="ud-msg">${esc(m.text)}</td><td class="ud-when">${esc(when)}</td></tr>`;
+    }).join('');
+    // pager
+    const pg=document.getElementById('ud-pager');
+    let h='';
+    h+=`<button ${page<=1?'disabled':''} onclick="loadMsgs(${page-1})">Prev</button>`;
+    h+=`<span class="ud-page-info">Page ${d.page} of ${d.pages} · ${d.total} total</span>`;
+    h+=`<button ${page>=d.pages?'disabled':''} onclick="loadMsgs(${page+1})">Next</button>`;
+    pg.innerHTML=h;
+  }catch(e){
+    tb.innerHTML='<tr><td colspan="4" class="ud-empty-row">Could not load messages.</td></tr>';
+  }
+}
+
+loadMe();
+loadMsgs(1);
+</script>
+</body>
+</html>

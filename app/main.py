@@ -19,6 +19,8 @@ from app.middleware.tenant import TenantMiddleware
 from app.ui.routes import router as ui_router
 
 from app.api.oauth import router as oauth_router
+from app.api.user_auth import router as user_auth_router
+from app.api.user_dashboard import router as user_dashboard_router
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +48,8 @@ def create_app() -> FastAPI:
     # ---- Routes ----
     app.mount("/static", StaticFiles(directory="app/ui/static"), name="static")
     app.include_router(auth_router)
+    app.include_router(user_auth_router)
+    app.include_router(user_dashboard_router)
     app.include_router(slack_router)
     app.include_router(admin_router)
     app.include_router(ui_router)
@@ -63,25 +67,38 @@ def create_app() -> FastAPI:
     @app.middleware("http")
     async def auth_redirect_middleware(request: Request, call_next):
         path = request.url.path
-        needs_auth = (
+
+        # --- Admin area guard (admin session or API token) ---
+        admin_needs_auth = (
             path.startswith("/admin")
             and not path.startswith("/admin/login")
             and not path.startswith("/admin/logout")
             and not path.startswith("/admin/register")
         ) or path.startswith("/api/admin")
 
-        if needs_auth:
+        if admin_needs_auth:
             session_uid = request.session.get("admin_user_id")
             header_token = request.headers.get("x-admin-token")
             expected = settings.admin_token
             authed_by_token = bool(header_token) and header_token == expected
-
             if not session_uid and not authed_by_token:
                 if path.startswith("/api/"):
-                    return JSONResponse(
-                        {"detail": "not_authenticated"}, status_code=401
-                    )
+                    return JSONResponse({"detail": "not_authenticated"}, status_code=401)
                 return RedirectResponse("/admin/login", status_code=303)
+
+        # --- User area guard (user session only) ---
+        user_needs_auth = (
+            path.startswith("/user")
+            and not path.startswith("/user/login")
+            and not path.startswith("/user/logout")
+        ) or path.startswith("/api/user")
+
+        if user_needs_auth:
+            user_uid = request.session.get("user_account_id")
+            if not user_uid:
+                if path.startswith("/api/"):
+                    return JSONResponse({"detail": "not_authenticated"}, status_code=401)
+                return RedirectResponse("/user/login", status_code=303)
 
         return await call_next(request)
 

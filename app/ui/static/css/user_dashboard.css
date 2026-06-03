@@ -1,0 +1,84 @@
+/* User dashboard — teal theme, standalone (no admin base.css) */
+* { box-sizing: border-box; }
+.ud-body {
+  margin: 0;
+  background: #f1f5f9;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: #0f172a;
+  min-height: 100vh;
+}
+
+.ud-nav {
+  background: #0f766e;
+  color: #fff;
+  height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+}
+.ud-nav-brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 16px; }
+.ud-nav-brand svg { width: 22px; height: 22px; }
+.ud-logout {
+  background: rgba(255,255,255,0.12);
+  color: #fff; border: 1px solid rgba(255,255,255,0.25);
+  padding: 7px 14px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer;
+}
+.ud-logout:hover { background: rgba(255,255,255,0.22); }
+
+.ud-main { max-width: 900px; margin: 28px auto; padding: 0 20px; display: flex; flex-direction: column; gap: 18px; }
+
+.ud-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 20px 22px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+}
+.ud-card-title { font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 14px; }
+
+/* Profile */
+.ud-profile { display: flex; align-items: center; gap: 16px; }
+.ud-avatar {
+  width: 56px; height: 56px; border-radius: 14px;
+  background: linear-gradient(135deg, #14b8a6, #0d9488);
+  color: #fff; font-weight: 700; font-size: 24px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.ud-name { font-size: 18px; font-weight: 700; }
+.ud-meta { font-size: 13px; color: #64748b; margin-top: 3px; }
+
+/* Groups */
+.ud-groups { display: flex; flex-wrap: wrap; gap: 8px; }
+.ud-chip {
+  background: #f1f5f9; color: #475569;
+  padding: 5px 12px; border-radius: 999px; font-size: 12.5px; font-weight: 600;
+}
+.ud-chip-on { background: #ccfbf1; color: #0f766e; }
+.ud-empty { color: #94a3b8; font-size: 13px; }
+
+/* Messages table */
+.ud-table-wrap { overflow-x: auto; }
+.ud-table { width: 100%; border-collapse: collapse; }
+.ud-table th {
+  text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em;
+  color: #94a3b8; padding: 8px 12px; border-bottom: 1px solid #e2e8f0;
+}
+.ud-table td { padding: 11px 12px; border-bottom: 1px solid #f1f5f9; font-size: 13.5px; vertical-align: top; }
+.ud-msg { max-width: 380px; word-break: break-word; }
+.ud-when { color: #94a3b8; font-size: 12.5px; white-space: nowrap; }
+.ud-loading, .ud-empty-row { text-align: center; color: #94a3b8; padding: 28px; }
+
+.ud-badge { font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 999px; }
+.ud-in { background: #e0f2fe; color: #0369a1; }
+.ud-out { background: #f1f5f9; color: #475569; }
+
+/* Pager */
+.ud-pager { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 16px; }
+.ud-pager button {
+  background: #fff; border: 1px solid #cbd5e1; color: #475569;
+  padding: 7px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer;
+}
+.ud-pager button:hover:not(:disabled) { background: #f8fafc; border-color: #0d9488; color: #0f766e; }
+.ud-pager button:disabled { opacity: 0.45; cursor: not-allowed; }
+.ud-page-info { font-size: 12.5px; color: #64748b; }

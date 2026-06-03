@@ -73,3 +73,18 @@ async def list_workspace_users(*, bot_token: str) -> list[dict]:
     except Exception as exc:
         logger.warning("users.list failed: %s", exc)
     return members
+
+async def post_dm(*, bot_id: int, bot_token: str, slack_user_id: str, text: str, blocks=None) -> dict:
+    """Open (or reuse) a DM channel with the user and post a message there.
+
+    Uses conversations.open to get the IM channel id, then posts to it."""
+    client = get_slack_client(bot_id, bot_token)
+    try:
+        opened = await client.conversations_open(users=slack_user_id)
+        dm_channel = opened["channel"]["id"]
+    except Exception:
+        logger.warning("conversations.open failed for user %s", slack_user_id)
+        return {}
+    return await post_message(
+        bot_id=bot_id, bot_token=bot_token, channel=dm_channel, text=text, blocks=blocks
+    )

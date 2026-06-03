@@ -197,6 +197,19 @@ async def _handle_event(*, bot_id: int, tenant_slug: str, event: dict) -> None:
             logger.exception("Failed to post Slack message")
             return
 
+        if user and channel and not channel.startswith("D"):
+            try:
+                from app.services.slack_client import post_dm
+                await post_dm(
+                    bot_id=bot.id,
+                    bot_token=bot.bot_token,
+                    slack_user_id=user,
+                    text=response,
+                )
+                logger.info("Also delivered reply to DM of user %s", user)
+            except Exception:
+                logger.exception("Failed to deliver DM copy")
+
         session.add(
             Message(
                 tenant_id=bot.tenant_id,

@@ -31,7 +31,7 @@ from app.services.group_service import (
     add_member, create_group, get_group_members,
     list_groups, remove_member,
 )
-
+from app.services.user_account_service import create_login, get_login_for_user
 logger = logging.getLogger(__name__)
 
 router = APIRouter(
@@ -488,3 +488,55 @@ async def api_remove_member(group_id: int, slack_user_id: str):
         await remove_member(session, group_id=group_id, slack_user_id=slack_user_id)
         await session.commit()
         return {"ok": True}
+    
+class CreateLoginReq(BaseModel):
+    username: str
+    password: str
+
+@router.get("/users/{user_id}/login")
+async def api_get_user_login(user_id: int):
+    """Check whether a Slack user already has a login account."""
+    sm = get_system_sessionmaker()
+    async with sm() as session:
+        user = await session.get(SlackUser, user_id)
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        acct = await get_login_for_user(
+            session, tenant_id=user.tenant_id, slack_user_id=user.slack_user_id
+        )
+        if not acct:
+            return {"has_login": False}
+        return {"has_login": True, "username": acct.username, "is_active": acct.is_active}
+
+
+@router.post("/users/{user_id}/login")
+async def api_create_user_login(user_id: int, req: CreateLoginReq):
+    """Admin creates a login for a Slack user."""
+    if len(req.username.strip()) < 3:
+        raise HTTPException(status_code=400, detail="Username must be at least 3 characters")
+    if len(req.password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+    sm = get_system_sessionmaker()
+    async with sm() as session:
+        user = await session.get(SlackUser, user_id)
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        # Already has a login?
+        existing = await get_login_for_user(
+            session, tenant_id=user.tenant_id, slack_user_id=user.slack_user_id
+        )
+        if existing:
+            raise HTTPException(status_code=409, detail="This user already has a login")
+        try:
+            acct = await create_login(
+                session,
+                tenant_id=user.tenant_id,
+                slack_user_id=user.slack_user_id,
+                username=req.username,
+                password=req.password,
+            )
+            await session.commit()
+        except IntegrityError:
+            await session.rollback()
+            raise HTTPException(status_code=409, detail="Username already taken")
+        return {"ok": True, "id": acct.id, "username": acct.username}

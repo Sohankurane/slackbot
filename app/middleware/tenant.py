@@ -25,6 +25,8 @@ _PUBLIC_PREFIXES = (
     "/favicon.ico",
     "/admin",
     "/api/admin",
+    "/user",
+    "/api/user",
 )
 
 class TenantMiddleware(BaseHTTPMiddleware):

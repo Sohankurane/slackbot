@@ -58,6 +58,18 @@
   </div>
 </div>
 
+<!-- Create Login Modal -->
+<div class="modal-backdrop" id="login-modal">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header"><div class="modal-title" id="login-title">Create User Login</div><button class="modal-close" onclick="closeModal('login-modal')">&times;</button></div>
+    <div class="modal-body">
+      <div class="info-box" id="login-info">Create login credentials so this user can sign in to their own dashboard.</div>
+      <div class="field"><label>Username <small>(min 3 chars)</small></label><input type="text" id="login-username" placeholder="username"></div>
+      <div class="field"><label>Password <small>(min 6 chars)</small></label><input type="password" id="login-password" placeholder="password"></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('login-modal')">Cancel</button><button class="btn btn-primary" id="login-save-btn" onclick="createLogin()">Create Login</button></div>
+  </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
@@ -101,6 +113,9 @@ async function loadUsers(){
     const adminBadge=u.is_admin?'<span class="badge badge-info" style="background:var(--brand-50);color:var(--brand-700);">Admin</span>':'<span class="value-empty">—</span>';
     const adminBtn=u.is_admin?`<button class="btn btn-sm" onclick="setAdmin(${u.id},false)">Revoke</button>`:`<button class="btn btn-sm" onclick="setAdmin(${u.id},true)">Make installer</button>`;
     const actBtn=u.is_deleted?`<button class="btn btn-sm" onclick="restoreU(${u.id})">Restore</button>`:`<button class="btn btn-danger btn-sm" onclick="delU(${u.id},'${esc(u.slack_user_id)}')">Soft Delete</button>`;
+    const loginBtn = u.slack_user_id.startsWith('PENDING:')
+      ? ''
+      : `<button class="btn btn-sm" onclick="openLogin(${u.id},'${esc(u.display_name||u.real_name||u.slack_user_id)}')">Login</button>`;
     return `<tr>
       <td><div class="user-cell"><div class="user-avatar" style="background:${color(u.id)};">${esc(init)}</div>${nameCell}</div></td>
       <td>${slackId}</td>
@@ -108,7 +123,7 @@ async function loadUsers(){
       <td>${adminBadge}</td>
       <td>${st}</td>
       <td>${joined}</td>
-      <td><div class="td-actions">${adminBtn} ${actBtn}</div></td>
+      <td><div class="td-actions">${loginBtn} ${adminBtn} ${actBtn}</div></td>
     </tr>`;
   }).join('');
 }
@@ -130,5 +145,41 @@ async function restoreU(id){const {ok}=await api('POST',`/api/admin/users/${id}/
 async function authorizeInstaller(){const email=document.getElementById('auth-email').value.trim();if(!email||!email.includes('@')){toast('Enter a valid email','error');return;}const {ok,data}=await api('POST',`/api/admin/tenants/${TENANT_ID}/authorize-installer?email=${encodeURIComponent(email)}`);if(ok){toast('Installer authorized','success');closeModal('authorize-modal');document.getElementById('auth-email').value='';Promise.all([loadUsers(),loadCounts()]);}else toast((data&&data.detail)||'Failed','error');}
 
 loadCounts();loadUsers();
+
+let loginUserId=null;
+
+async function openLogin(userId, name){
+  loginUserId=userId;
+  document.getElementById('login-title').textContent='User Login — '+name;
+  document.getElementById('login-username').value='';
+  document.getElementById('login-password').value='';
+  // Check if they already have one
+  const {data}=await api('GET',`/api/admin/users/${userId}/login`);
+  const info=document.getElementById('login-info');
+  const btn=document.getElementById('login-save-btn');
+  if(data&&data.has_login){
+    info.innerHTML=`This user already has a login: <strong>${esc(data.username)}</strong>. Creating a new one isn't allowed.`;
+    document.getElementById('login-username').value=data.username;
+    document.getElementById('login-username').disabled=true;
+    document.getElementById('login-password').disabled=true;
+    btn.disabled=true; btn.textContent='Login exists';
+  }else{
+    info.textContent='Create login credentials so this user can sign in to their own dashboard.';
+    document.getElementById('login-username').disabled=false;
+    document.getElementById('login-password').disabled=false;
+    btn.disabled=false; btn.textContent='Create Login';
+  }
+  openModal('login-modal');
+}
+
+async function createLogin(){
+  const username=document.getElementById('login-username').value.trim();
+  const password=document.getElementById('login-password').value;
+  if(username.length<3){toast('Username min 3 chars','error');return;}
+  if(password.length<6){toast('Password min 6 chars','error');return;}
+  const {ok,data}=await api('POST',`/api/admin/users/${loginUserId}/login`,{username,password});
+  if(ok){toast('Login created','success');closeModal('login-modal');}
+  else toast((data&&data.detail)||'Failed','error');
+}
 </script>
 {% endblock %}
