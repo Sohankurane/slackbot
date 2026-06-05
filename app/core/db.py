@@ -18,6 +18,15 @@ _engines: dict[str, AsyncEngine] = {}
 _sessionmakers: dict[str, async_sessionmaker[AsyncSession]] = {}
 
 
+# Required for asyncpg when talking to Supabase / managed Postgres / poolers.
+# Disables prepared-statement caching so we don't hit
+# "prepared statement does not exist" errors when the pooler rebinds.
+_ASYNCPG_CONNECT_ARGS = {
+    "statement_cache_size": 0,
+    "prepared_statement_cache_size": 0,
+}
+
+
 def _build_url_for_tenant(tenant_slug: str) -> str:
     """Right now: same URL for every tenant. Later: look up per-tenant URL
     from a 'tenants' config table."""
@@ -35,6 +44,7 @@ def get_engine(tenant_slug: str) -> AsyncEngine:
             pool_pre_ping=True,
             pool_recycle=1800,
             echo=False,
+            connect_args=_ASYNCPG_CONNECT_ARGS,
         )
         _engines[tenant_slug] = engine
         _sessionmakers[tenant_slug] = async_sessionmaker(
@@ -55,6 +65,7 @@ async def get_session(tenant_slug: str) -> AsyncIterator[AsyncSession]:
     async with sm() as session:
         yield session
 
+
 _system_engine: AsyncEngine | None = None
 _system_sessionmaker: async_sessionmaker[AsyncSession] | None = None
 
@@ -67,6 +78,7 @@ def get_system_engine() -> AsyncEngine:
             pool_size=2,
             max_overflow=2,
             pool_pre_ping=True,
+            connect_args=_ASYNCPG_CONNECT_ARGS,
         )
         _system_sessionmaker = async_sessionmaker(
             _system_engine, expire_on_commit=False, class_=AsyncSession

@@ -29,11 +29,37 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/slack", tags=["slack"])
 
+
+# In-memory dedup of Slack event ids. Slack retries an event if we don't ACK
+# within 3 seconds; without this, the same event gets processed multiple times
+# (which caused duplicate replies). For a single-process app this is enough;
+# a multi-process deployment would use Redis instead.
+_seen_event_ids: set[str] = set()
+_seen_order: list[str] = []
+_SEEN_MAX = 1000
+
+
+def _already_processed(event_id: str | None) -> bool:
+    """Return True if we've already handled this Slack event id."""
+    if not event_id:
+        return False
+    if event_id in _seen_event_ids:
+        return True
+    _seen_event_ids.add(event_id)
+    _seen_order.append(event_id)
+    # Trim memory so the set doesn't grow unbounded
+    if len(_seen_order) > _SEEN_MAX:
+        oldest = _seen_order.pop(0)
+        _seen_event_ids.discard(oldest)
+    return False
+
+
 @router.post("/events")
 async def slack_events(
     request: Request,
     x_slack_signature: str = Header(default=""),
     x_slack_request_timestamp: str = Header(default=""),
+    x_slack_retry_num: str = Header(default=""),
 ):
     raw_body = await request.body()
 
@@ -45,6 +71,22 @@ async def slack_events(
     if payload.get("type") == "url_verification":
         logger.info("Slack URL verification challenge received")
         return {"challenge": payload.get("challenge")}
+
+    # If Slack is retrying a previous delivery, ACK and ignore — we already
+    # have (or will have) the original. Retries happen on slow ACK / network.
+    if x_slack_retry_num:
+        logger.info(
+            "Slack retry #%s received; acknowledging without reprocessing",
+            x_slack_retry_num,
+        )
+        return {"ok": True}
+
+    # Skip duplicate deliveries by Slack event id (belt-and-suspenders with the
+    # retry check above).
+    event_id = payload.get("event_id")
+    if _already_processed(event_id):
+        logger.info("Duplicate Slack event %s ignored", event_id)
+        return {"ok": True}
 
     tenant_id = getattr(request.state, "tenant_id", None)
     if not tenant_id:
@@ -76,6 +118,7 @@ async def slack_events(
         asyncio.create_task(_handle_event(bot_id=bot.id, tenant_slug=tenant_slug, event=event))
 
     return {"ok": True}
+
 
 async def _handle_event(*, bot_id: int, tenant_slug: str, event: dict) -> None:
     """Runs after we've already 200'd back to Slack."""
@@ -197,7 +240,10 @@ async def _handle_event(*, bot_id: int, tenant_slug: str, event: dict) -> None:
             logger.exception("Failed to post Slack message")
             return
 
-        if user and channel and not channel.startswith("D"):
+        # Dual delivery — also DM the user ONLY when the reply went to a real
+        # channel (channel ids start with 'C'). Direct messages ('D') and group
+        # DMs already reach the user, so we skip them to avoid duplicate sends.
+        if user and channel and channel.startswith("C"):
             try:
                 from app.services.slack_client import post_dm
                 await post_dm(
