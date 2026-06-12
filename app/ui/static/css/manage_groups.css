@@ -1,78 +1,73 @@
-/* Manage Groups page */
+/* ============ Manage Groups — premium console v2 ============ */
 
+/* ---------- Context bar ---------- */
 .ctx-bar {
-  display: flex;
-  align-items: center;
-  gap: 14px;
+  display: flex; align-items: center; gap: 14px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
   padding: 16px 20px;
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
-  margin: 0 0 20px;
+  margin: 0 0 18px;
 }
-
 .ctx-logo {
-  width: 44px;
-  height: 44px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #6366f1, #4338ca);
-  color: #fff;
-  font-weight: 700;
-  font-size: 18px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  background: var(--brand-grad);
+  color: #fff; font-weight: 700; font-size: 18px;
+  display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.28);
 }
-
-.ctx-name { font-size: 15px; font-weight: 600; color: #0f172a; }
-.ctx-meta { font-size: 12.5px; color: #64748b; margin-top: 2px; }
+.ctx-name { font-size: 15px; font-weight: 700; color: var(--ink-900); }
+.ctx-meta { font-size: 12.5px; color: var(--ink-500); margin-top: 2px; }
 .ctx-meta code {
-  background: #f1f5f9;
-  padding: 1px 6px;
-  border-radius: 4px;
+  background: #eef1f6;
+  padding: 1px 7px;
+  border-radius: 5px;
   font-size: 11.5px;
   font-family: ui-monospace, monospace;
+  color: var(--ink-700);
 }
 
-/* Access control card */
-.ac-card { margin-bottom: 20px; }
+/* ---------- Access control card ---------- */
+.ac-card { margin-bottom: 18px; }
 .ac-body {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 16px; flex-wrap: wrap;
 }
-.ac-title { font-size: 14px; font-weight: 600; color: #0f172a; }
-.ac-desc { font-size: 13px; color: #64748b; margin-top: 3px; max-width: 560px; }
+.ac-title { font-size: 14px; font-weight: 700; color: var(--ink-900); }
+.ac-desc { font-size: 13px; color: var(--ink-500); margin-top: 3px; max-width: 560px; line-height: 1.55; }
 
-/* Toggle switch */
+/* ---------- Toggle switch ---------- */
 .switch { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; }
 .switch input { display: none; }
 .switch-track {
-  width: 42px; height: 24px; border-radius: 999px;
-  background: #cbd5e1; position: relative; transition: background .2s;
+  width: 44px; height: 25px; border-radius: 999px;
+  background: #cbd5e1;
+  position: relative;
+  transition: background .2s;
   flex-shrink: 0;
 }
 .switch-thumb {
   position: absolute; top: 3px; left: 3px;
-  width: 18px; height: 18px; border-radius: 50%;
-  background: #fff; transition: transform .2s; box-shadow: 0 1px 2px rgba(0,0,0,.2);
+  width: 19px; height: 19px; border-radius: 50%;
+  background: #fff;
+  transition: transform .2s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
 }
-.switch input:checked + .switch-track { background: #4f46e5; }
-.switch input:checked + .switch-track .switch-thumb { transform: translateX(18px); }
-.switch-label { font-size: 13px; font-weight: 600; color: #64748b; }
+.switch input:checked + .switch-track {
+  background: var(--brand-grad);
+}
+.switch input:checked + .switch-track .switch-thumb { transform: translateX(19px); }
+.switch-label { font-size: 13px; font-weight: 600; color: var(--ink-500); min-width: 24px; }
 
-/* Members modal list rows */
+/* ---------- Members modal list ---------- */
 .member-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 9px 0;
-  border-bottom: 1px solid #f1f5f9;
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid #f1f4f9;
 }
 .member-row:last-child { border-bottom: 0; }
-.member-name { font-size: 13.5px; color: #1e293b; font-weight: 500; }
-.members-empty { color: #94a3b8; font-size: 13px; padding: 8px 0; }
+.member-name { font-size: 13.5px; color: var(--ink-900); font-weight: 500; }
+.members-empty { color: var(--ink-400); font-size: 13px; padding: 8px 0; }

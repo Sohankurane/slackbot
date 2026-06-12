@@ -3,50 +3,88 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}Admin{% endblock %}</title>
+  <title>{% block title %}Slackbot Console{% endblock %}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/css/base.css">
   {% block extra_css %}{% endblock %}
 </head>
 <body>
-  <!-- Top navigation bar -->
-  <header class="topnav">
-    <div class="topnav-inner">
-      <div class="topnav-left">
-        <a href="/admin" class="topnav-brand">
-          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/></svg>
-          <span>Slackbot</span>
-        </a>
-        <nav class="topnav-links">
-          <a href="/admin" class="topnav-link {% if request.url.path == '/admin' %}active{% endif %}">Dashboard</a>
-          <a href="/admin/manage" class="topnav-link {% if '/admin/manage' in request.url.path %}active{% endif %}">Tenants &amp; Bots</a>
-          <a href="/admin/templates" class="topnav-link {% if '/admin/templates' in request.url.path %}active{% endif %}">Templates</a>
-          <a href="/admin/compose?tenant=prj-sk" class="topnav-link {% if '/admin/compose' in request.url.path %}active{% endif %}">Compose</a>
-        </nav>
+
+<div class="shell">
+
+  <!-- ======== Sidebar ======== -->
+  <aside class="sidebar">
+    <div class="sb-brand">
+      <div class="sb-logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/></svg>
       </div>
-      <div class="topnav-right">
-        {% set username = request.session.get('admin_username', 'admin') %}
-        <div class="topnav-user">
-          <div class="topnav-avatar">{{ username[0]|upper }}</div>
-          <span class="topnav-username">{{ username }}</span>
+      <div>
+        <div class="sb-brand-name">Slackbot</div>
+        <div class="sb-brand-sub">Admin Console</div>
+      </div>
+    </div>
+
+    <button class="sb-search" onclick="openPalette()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      <span>Search</span>
+      <kbd>Ctrl K</kbd>
+    </button>
+
+    <nav class="sb-nav">
+      <div class="sb-section">Overview</div>
+      <a href="/admin" class="sb-link {{ 'active' if request.url.path == '/admin' else '' }}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+        Dashboard
+      </a>
+
+      <div class="sb-section">Manage</div>
+      <a href="/admin/manage" class="sb-link {{ 'active' if request.url.path.startswith('/admin/manage') else '' }}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-3"/></svg>
+        Tenants &amp; Bots
+      </a>
+      <a href="/admin/templates" class="sb-link {{ 'active' if request.url.path.startswith('/admin/templates') else '' }}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18"/></svg>
+        App Templates
+      </a>
+      <a href="/admin/compose?tenant=prj-sk" class="sb-link {{ 'active' if request.url.path.startswith('/admin/compose') else '' }}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+        Compose
+      </a>
+    </nav>
+
+    <div class="sb-footer">
+      {% if request.session.get('admin_username') %}
+      <div class="sb-user">
+        <div class="sb-user-avatar">{{ request.session.get('admin_username')[0]|upper }}</div>
+        <div class="sb-user-meta">
+          <div class="sb-user-name">{{ request.session.get('admin_username') }}</div>
+          <div class="sb-user-role">Administrator</div>
         </div>
-        <form method="POST" action="/admin/logout">
-          <button type="submit" class="topnav-logout" title="Sign out">
-            <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+        <form method="POST" action="/admin/logout" class="sb-logout-form">
+          <button type="submit" class="sb-logout" title="Sign out">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
           </button>
         </form>
       </div>
+      {% endif %}
     </div>
-  </header>
+  </aside>
 
-  <main class="page-wrap">
-    {% block content %}{% endblock %}
-  </main>
+  <!-- ======== Main ======== -->
+  <div class="main">
+    <main class="content">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
 
-  <div class="toast-container" id="toasts"></div>
+</div>
 
-  <!-- Shared confirm modal -->
+<!-- Toasts -->
+<div class="toast-container" id="toasts"></div>
+
+<!-- Shared confirm modal -->
 <div class="cmodal-backdrop" id="confirmModal">
   <div class="cmodal" onclick="event.stopPropagation()">
     <div class="cmodal-icon" id="confirmIcon">
@@ -61,80 +99,169 @@
   </div>
 </div>
 
-  <script>
-    window.toast = function(message, type) {
-      const el = document.createElement('div');
-      el.className = 'toast toast-' + (type || 'info');
-      el.textContent = message;
-      document.getElementById('toasts').appendChild(el);
-      setTimeout(() => { el.style.opacity='0'; el.style.transition='opacity 200ms'; setTimeout(()=>el.remove(),200); }, 3500);
-    };
-    window.openModal = (id) => document.getElementById(id).classList.add('open');
-    window.closeModal = (id) => document.getElementById(id).classList.remove('open');
-    document.addEventListener('click', (e) => { if (e.target.classList.contains('modal-backdrop')) e.target.classList.remove('open'); });
-    window.api = async function(method, url, body) {
-      const opts = { method, credentials: 'same-origin', headers: {} };
-      if (body) { opts.headers['Content-Type']='application/json'; opts.body=JSON.stringify(body); }
-      const res = await fetch(url, opts);
-      let data = null; try { data = await res.json(); } catch {}
-      return { ok: res.ok, status: res.status, data };
-    };
-    // Promise-based confirm modal — replaces native confirm()
-    window.confirmAction = function(message, opts) {
-      opts = opts || {};
-      return new Promise((resolve) => {
-        const backdrop = document.getElementById('confirmModal');
-        const titleEl = document.getElementById('confirmTitle');
-        const msgEl = document.getElementById('confirmMessage');
-        const okBtn = document.getElementById('confirmOk');
-        const cancelBtn = document.getElementById('confirmCancel');
+<!-- Command palette -->
+<div class="palette-backdrop" id="palette">
+  <div class="palette" onclick="event.stopPropagation()">
+    <div class="palette-input-wrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      <input type="text" id="palette-input" placeholder="Jump to a page…" autocomplete="off">
+      <kbd>Esc</kbd>
+    </div>
+    <div class="palette-list" id="palette-list"></div>
+  </div>
+</div>
 
-        titleEl.textContent = opts.title || 'Are you sure?';
-        msgEl.textContent = message || '';
-        okBtn.textContent = opts.confirmText || 'Confirm';
+<script>
+/* ---------- Shared API helper ---------- */
+window.api = async function(method, url, body) {
+  const opts = { method, headers: {}, credentials: 'same-origin' };
+  if (body !== undefined) {
+    opts.headers['Content-Type'] = 'application/json';
+    opts.body = JSON.stringify(body);
+  }
+  try {
+    const res = await fetch(url, opts);
+    let data = null;
+    try { data = await res.json(); } catch (e) {}
+    return { ok: res.ok, status: res.status, data };
+  } catch (e) {
+    return { ok: false, status: 0, data: null };
+  }
+};
 
-        // danger styling toggle
-        okBtn.classList.toggle('danger', opts.danger !== false);
+/* ---------- Toasts ---------- */
+window.toast = function(message, type) {
+  type = type || 'success';
+  const box = document.getElementById('toasts');
+  const el = document.createElement('div');
+  el.className = 'toast toast-' + type;
+  const icon = type === 'success'
+    ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6L9 17l-5-5"/></svg>'
+    : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>';
+  el.innerHTML = icon + '<span>' + message + '</span>';
+  box.appendChild(el);
+  setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 250); }, 2600);
+};
 
-        backdrop.classList.add('open');
+/* ---------- Modals ---------- */
+window.openModal = function(id) { document.getElementById(id).classList.add('open'); };
+window.closeModal = function(id) { document.getElementById(id).classList.remove('open'); };
+document.addEventListener('click', function(e) {
+  if (e.target.classList && e.target.classList.contains('modal-backdrop') && e.target.classList.contains('open')) {
+    e.target.classList.remove('open');
+  }
+});
 
-        function cleanup() {
-          backdrop.classList.remove('open');
-          okBtn.removeEventListener('click', onOk);
-          cancelBtn.removeEventListener('click', onCancel);
-          backdrop.removeEventListener('click', onBackdrop);
-        }
-        function onOk()     { cleanup(); resolve(true); }
-        function onCancel() { cleanup(); resolve(false); }
-        function onBackdrop(e) { if (e.target === backdrop) { cleanup(); resolve(false); } }
+/* ---------- Promise-based confirm ---------- */
+window.confirmAction = function(message, opts) {
+  opts = opts || {};
+  return new Promise((resolve) => {
+    const backdrop = document.getElementById('confirmModal');
+    const titleEl = document.getElementById('confirmTitle');
+    const msgEl = document.getElementById('confirmMessage');
+    const okBtn = document.getElementById('confirmOk');
+    const cancelBtn = document.getElementById('confirmCancel');
 
-        okBtn.addEventListener('click', onOk);
-        cancelBtn.addEventListener('click', onCancel);
-        backdrop.addEventListener('click', onBackdrop);
-      });
-    };
-    // Render skeleton rows into a tbody while data loads
-    window.renderSkeletonRows = function(tbody, cols, rows) {
-      rows = rows || 5;
-      const widths = ['sk-text', 'sk-short', 'sk-long', 'sk-text'];
-      let html = '';
-      for (let r = 0; r < rows; r++) {
-        html += '<tr class="sk-row">';
-        for (let c = 0; c < cols; c++) {
-          if (c === 0) {
-            // First column: avatar + text combo
-            html += '<td><div class="sk-cell-flex"><span class="skeleton sk-circle"></span><span class="skeleton sk-text"></span></div></td>';
-          } else if (c === cols - 1) {
-            html += '<td><span class="skeleton sk-btn"></span></td>';
-          } else {
-            html += '<td><span class="skeleton ' + widths[c % widths.length] + '"></span></td>';
-          }
-        }
-        html += '</tr>';
+    titleEl.textContent = opts.title || 'Are you sure?';
+    msgEl.textContent = message || '';
+    okBtn.textContent = opts.confirmText || 'Confirm';
+    okBtn.classList.toggle('danger', opts.danger !== false);
+    backdrop.classList.add('open');
+
+    function cleanup() {
+      backdrop.classList.remove('open');
+      okBtn.removeEventListener('click', onOk);
+      cancelBtn.removeEventListener('click', onCancel);
+      backdrop.removeEventListener('click', onBackdrop);
+    }
+    function onOk() { cleanup(); resolve(true); }
+    function onCancel() { cleanup(); resolve(false); }
+    function onBackdrop(e) { if (e.target === backdrop) { cleanup(); resolve(false); } }
+
+    okBtn.addEventListener('click', onOk);
+    cancelBtn.addEventListener('click', onCancel);
+    backdrop.addEventListener('click', onBackdrop);
+  });
+};
+
+/* ---------- Skeleton rows ---------- */
+window.renderSkeletonRows = function(tbody, cols, rows) {
+  rows = rows || 5;
+  const widths = ['sk-text', 'sk-short', 'sk-long', 'sk-text'];
+  let html = '';
+  for (let r = 0; r < rows; r++) {
+    html += '<tr class="sk-row">';
+    for (let c = 0; c < cols; c++) {
+      if (c === 0) {
+        html += '<td><div class="sk-cell-flex"><span class="skeleton sk-circle"></span><span class="skeleton sk-text"></span></div></td>';
+      } else if (c === cols - 1) {
+        html += '<td><span class="skeleton sk-btn"></span></td>';
+      } else {
+        html += '<td><span class="skeleton ' + widths[c % widths.length] + '"></span></td>';
       }
-      tbody.innerHTML = html;
-    };
-  </script>
-  {% block extra_js %}{% endblock %}
+    }
+    html += '</tr>';
+  }
+  tbody.innerHTML = html;
+};
+
+/* ---------- Command palette (Ctrl+K) ---------- */
+const PALETTE_ITEMS = [
+  { label: 'Dashboard',         hint: 'Metrics & activity',        href: '/admin' },
+  { label: 'Tenants & Bots',    hint: 'Workspaces and Slack apps', href: '/admin/manage' },
+  { label: 'App Templates',     hint: 'OAuth install templates',   href: '/admin/templates' },
+  { label: 'Compose Message',   hint: 'Send alerts, Q&A, MCQ',     href: '/admin/compose?tenant=prj-sk' },
+  { label: 'Users — PRJ-SK',    hint: 'Slack users & logins',      href: '/admin/manage/prj-sk/users' },
+  { label: 'Groups — PRJ-SK',   hint: 'Groups & access control',   href: '/admin/manage/prj-sk/groups' },
+  { label: 'History — PRJ-SK',  hint: 'Message audit log',         href: '/admin/manage/prj-sk/history' },
+];
+
+function openPalette() {
+  document.getElementById('palette').classList.add('open');
+  const input = document.getElementById('palette-input');
+  input.value = '';
+  renderPalette('');
+  setTimeout(() => input.focus(), 30);
+}
+function closePalette() { document.getElementById('palette').classList.remove('open'); }
+
+function renderPalette(q) {
+  q = (q || '').toLowerCase();
+  const list = document.getElementById('palette-list');
+  const matches = PALETTE_ITEMS.filter(i =>
+    i.label.toLowerCase().includes(q) || i.hint.toLowerCase().includes(q)
+  );
+  if (!matches.length) {
+    list.innerHTML = '<div class="palette-empty">No matches</div>';
+    return;
+  }
+  list.innerHTML = matches.map((i, idx) => `
+    <a href="${i.href}" class="palette-item ${idx === 0 ? 'first' : ''}">
+      <div>
+        <div class="palette-item-label">${i.label}</div>
+        <div class="palette-item-hint">${i.hint}</div>
+      </div>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+    </a>`).join('');
+}
+
+document.addEventListener('keydown', function(e) {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+    e.preventDefault();
+    openPalette();
+  }
+  if (e.key === 'Escape') closePalette();
+  if (e.key === 'Enter' && document.getElementById('palette').classList.contains('open')) {
+    const first = document.querySelector('.palette-item.first');
+    if (first) window.location.href = first.getAttribute('href');
+  }
+});
+document.getElementById('palette-input').addEventListener('input', e => renderPalette(e.target.value));
+document.getElementById('palette').addEventListener('click', function(e) {
+  if (e.target === this) closePalette();
+});
+</script>
+
+{% block extra_js %}{% endblock %}
 </body>
 </html>
